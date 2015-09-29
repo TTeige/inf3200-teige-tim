@@ -35,6 +35,8 @@
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.ServiceModel" />
+    <Reference Include="System.ServiceModel.Web" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -54,6 +56,20 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\TH-NETII\Basic\THNETII.Basic.csproj">
+      <Project>{41ebd80c-7e60-4d7f-a15b-fc501e114c4c}</Project>
+      <Name>THNETII.Basic</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\TH-NETII\WCF\THNETII.WCF.csproj">
+      <Project>{38c90e19-075b-4bd3-a458-ec364454c2a0}</Project>
+      <Name>THNETII.WCF</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\WebServices\UiT.Inf3200.WebServices.csproj">
+      <Project>{8d8f3484-b79a-4a41-aa4a-24594ddbd049}</Project>
+      <Name>UiT.Inf3200.WebServices</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
