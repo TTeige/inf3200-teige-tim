@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using THNETII;
 
 namespace UiT.Inf3200.StorageNodeServer
 {
@@ -10,6 +11,9 @@ namespace UiT.Inf3200.StorageNodeServer
 	{
 		static void Main(string[] args)
 		{
+			AssemblySplash.WriteAssemblySplash();
+
+			ConsoleTools.WriteKeyPressForExit();
 		}
 	}
 }
