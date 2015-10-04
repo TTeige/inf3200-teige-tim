@@ -47,12 +47,12 @@ namespace UiT.Inf3200.StorageNodeServer
                     }
                 }
 
-                Console.WriteLine("STORAGE : Assigned node GUID: {0}", frontendUri, nodeGuid);
+                Console.WriteLine("STORAGE : Assigned node GUID: {0}", nodeGuid);
             }
 
             httpListener.BeginGetContext(HandleHttpCtxCallback, 0U);
 
-            Console.WriteLine("FRONTEND: Server started and ready to accept requests . . .");
+            Console.WriteLine("STORAGE : Server started and ready to accept requests . . .");
 
             terminateEvent.WaitOne();
 
