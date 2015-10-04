@@ -59,7 +59,7 @@ namespace UiT.Inf3200.FrontendServer
             }
             else if (string.Equals(httpMethod, "MANAGE", StringComparison.InvariantCultureIgnoreCase))
             {
-                HandleHttpMngCtxCallback(httpCtx);
+                HandleMngCtx(httpCtx);
             }
             else if (string.Equals(httpMethod, "DIAG", StringComparison.InvariantCultureIgnoreCase))
             {
