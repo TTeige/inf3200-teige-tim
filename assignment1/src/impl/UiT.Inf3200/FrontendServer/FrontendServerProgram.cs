@@ -227,7 +227,7 @@ namespace UiT.Inf3200.FrontendServer
             var value = new UriBuilder();
             value.Scheme = Uri.UriSchemeHttp;
             value.Host = httpCtx.Request.RemoteEndPoint.Address.ToString();
-            value.Port = httpCtx.Request.RemoteEndPoint.Port;
+            value.Port = 8181;
 
             storageNodes[clientId] = value.Uri;
             nodeRing[FindNewRingId()] = clientId;
