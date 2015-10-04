@@ -40,7 +40,7 @@ namespace UiT.Inf3200.StorageNodeServer
                 logonRequest.Method = "MANAGE";
                 using (var logonResponse = logonRequest.GetResponse())
                 {
-                    Console.WriteLine("STORAGE : Storage node logged on Frontend ({0}), Assigned node GUID: {0}", frontendUri);
+                    Console.WriteLine("STORAGE : Storage node logged on Frontend ({0})", frontendUri);
                     using (var memStream = new MemoryStream((int)logonResponse.ContentLength))
                     {
                         logonResponse.GetResponseStream().CopyTo(memStream);
