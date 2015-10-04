@@ -42,14 +42,9 @@ namespace UiT.Inf3200.FrontendServer
 
         private static void HandleHttpCtxCallback(IAsyncResult ar)
         {
-            Console.WriteLine("FRONTEND: [{0}] Waiting for a new HTTP context . . .", (uint)ar.AsyncState);
             HttpListenerContext httpCtx;
             try { httpCtx = httpListener.EndGetContext(ar); }
-            catch (ObjectDisposedException)
-            {
-                Console.WriteLine("FRONTEND: [{0}] Failed to receive a new HTTP context . . .", (uint)ar.AsyncState);
-                return;
-            }
+            catch (ObjectDisposedException) { return; }
             catch (HttpListenerException) { return; }
 
             if (httpListener.IsListening)
@@ -61,31 +56,33 @@ namespace UiT.Inf3200.FrontendServer
             var httpMethod = httpCtx.Request.HttpMethod;
             if (string.Equals(httpMethod, WebRequestMethods.Http.Get, StringComparison.InvariantCultureIgnoreCase))
             {
-                HandleKvpGet(httpCtx);
+                HandleKvpGet(httpCtx, (uint)ar.AsyncState);
             }
             else if (string.Equals(httpMethod, WebRequestMethods.Http.Put, StringComparison.InvariantCultureIgnoreCase))
             {
-                HandleKvpPut(httpCtx);
+                HandleKvpPut(httpCtx, (uint)ar.AsyncState);
             }
             else if (string.Equals(httpMethod, "MANAGE", StringComparison.InvariantCultureIgnoreCase))
             {
-                HandleMngCtx(httpCtx);
+                HandleMngCtx(httpCtx, (uint)ar.AsyncState);
             }
             else if (string.Equals(httpMethod, "DIAG", StringComparison.InvariantCultureIgnoreCase))
             {
-                HandleDiagnostics(httpCtx);
+                HandleDiagnostics(httpCtx, (uint)ar.AsyncState);
             }
             else
             {
-                Console.WriteLine("FRONTEND: [{0}] Intercepted HTTP request with unknown method: {1} . . .", (uint)ar.AsyncState, httpMethod);
+                Console.WriteLine("FRONTEND: [{0}] Intercepted HTTP request with unknown method: {1}", (uint)ar.AsyncState, httpMethod);
 
                 httpCtx.Response.StatusCode = (int)HttpStatusCode.NotImplemented;
                 httpCtx.Response.Close(new byte[0], willBlock: false);
             }
         }
 
-        private static void HandleDiagnostics(HttpListenerContext httpCtx)
+        private static void HandleDiagnostics(HttpListenerContext httpCtx, uint httpReqId)
         {
+            Console.WriteLine("FRONTEND: [{0}] Handling Diagnostics request from client {1}", httpReqId, httpCtx.Request.RemoteEndPoint);
+            Console.WriteLine("FRONTEND: [{0}] Reading current ring setup", httpReqId);
             var ringNodeUriDict = nodeRing.ToDictionary(nodeKvp => nodeKvp.Key, nodeKvp => new[] { nodeKvp.Value.ToString(), storageNodes[nodeKvp.Value].ToString() });
             var ringNodeSerializer = new DataContractJsonSerializer(ringNodeUriDict.GetType(),
                 new DataContractJsonSerializerSettings { UseSimpleDictionaryFormat = true });
@@ -94,24 +91,30 @@ namespace UiT.Inf3200.FrontendServer
             httpCtx.Response.ContentType = "application/json";
             using (var targetStream = new MemoryStream())
             {
+                Console.WriteLine("FRONTEND: [{0}] Serializing ring status to JSON", httpReqId);
+
                 ringNodeSerializer.WriteObject(targetStream, ringNodeUriDict);
                 targetStream.Flush();
 
-                httpCtx.Response.ContentLength64 = targetStream.Length;
+                Console.WriteLine("FRONTEND: [{0}] Sending JSON response to client", httpReqId);
                 httpCtx.Response.Close(targetStream.ToArray(), willBlock: false);
             }
         }
 
-        private static void HandleKvpGet(HttpListenerContext httpCtx)
+        private static void HandleKvpGet(HttpListenerContext httpCtx, uint httpReqId)
         {
+            Console.WriteLine("FRONTEND: [{0}] Handling Key GET request from client {1}", httpReqId, httpCtx.Request.RemoteEndPoint);
             var key = httpCtx.Request.Url.LocalPath;
             bool foundNodeUri;
             Uri nodeUri;
+
+            Console.WriteLine("FRONTEND: [{0}] Determining storage node for key {1} (Hash code: {2})", httpReqId, key, key.GetHashCode());
             do
             {
                 nodeUri = FindStorageNode(key.GetHashCode(), out foundNodeUri);
             } while (!foundNodeUri);
 
+            Console.WriteLine("FRONTEND: [{0}] Requesting key from storage node at {1}", httpReqId, nodeUri);
             var request = WebRequest.Create(new Uri(nodeUri, key));
             request.Method = WebRequestMethods.Http.Get;
 
@@ -119,10 +122,13 @@ namespace UiT.Inf3200.FrontendServer
             {
                 var paramArray = ar.AsyncState as object[];
                 var ctx = paramArray[0] as HttpListenerContext;
-                var req = paramArray[1] as WebRequest;
+                var srcReqId = (uint)paramArray[1];
+                var req = paramArray[2] as WebRequest;
 
                 using (var resp = req.EndGetResponse(ar))
                 {
+                    Console.WriteLine("FRONTEND: [{0}] Got response from storage node, transmittid key value to client . . .", srcReqId, nodeUri);
+
                     ctx.Response.StatusCode = (int)HttpStatusCode.OK;
                     ctx.Response.ContentLength64 = resp.ContentLength;
                     ctx.Response.ContentType = resp.ContentType;
@@ -134,19 +140,22 @@ namespace UiT.Inf3200.FrontendServer
                         targetStream.Flush();
                     }
                 }
-            }, new object[] { httpCtx, request });
+            }, new object[] { httpCtx, httpReqId, request });
         }
 
-        private static void HandleKvpPut(HttpListenerContext httpCtx)
+        private static void HandleKvpPut(HttpListenerContext httpCtx, uint httpReqId)
         {
+            Console.WriteLine("FRONTEND: [{0}] Handling Key PUT request from client {1}", httpReqId, httpCtx.Request.RemoteEndPoint);
             var key = httpCtx.Request.Url.LocalPath;
             bool foundNodeUri;
             Uri nodeUri;
+            Console.WriteLine("FRONTEND: [{0}] Determining storage node for key {1} (Hash code: {2})", httpReqId, key, key.GetHashCode());
             do
             {
                 nodeUri = FindStorageNode(key.GetHashCode(), out foundNodeUri);
             } while (!foundNodeUri);
 
+            Console.WriteLine("FRONTEND: [{0}] Sending key value to storage node at {1}", httpReqId, nodeUri);
             var request = WebRequest.Create(new Uri(nodeUri, key));
             request.Method = WebRequestMethods.Http.Put;
             request.ContentLength = httpCtx.Request.ContentLength64;
@@ -156,17 +165,19 @@ namespace UiT.Inf3200.FrontendServer
             {
                 var paramArray = ar.AsyncState as object[];
                 var sourceCtx = paramArray[0] as HttpListenerContext;
-                var req = paramArray[1] as WebRequest;
+                var srcReqId = (uint)paramArray[1];
+                var req = paramArray[2] as WebRequest;
 
                 using (var reqStream = req.EndGetRequestStream(ar))
                     sourceCtx.Request.InputStream.CopyTo(reqStream);
 
                 using (var resp = req.GetResponse()) { }
+                Console.WriteLine("FRONTEND: [{0}] Key stored on storage node.", srcReqId);
 
                 sourceCtx.Response.StatusCode = (int)HttpStatusCode.OK;
                 sourceCtx.Response.Close(new byte[0], willBlock: false);
 
-            }, new object[] { httpCtx, request });
+            }, new object[] { httpCtx, httpReqId, request });
         }
 
         private static Uri FindStorageNode(int hashCode, out bool success)
@@ -179,22 +190,22 @@ namespace UiT.Inf3200.FrontendServer
             return nodeInfo.Item2;
         }
 
-        private static void HandleMngCtx(HttpListenerContext httpCtx)
+        private static void HandleMngCtx(HttpListenerContext httpCtx, uint httpReqId)
         {
             var httpUrl = httpCtx.Request.Url;
 
             var managementRes = httpUrl.LocalPath;
             if (string.Equals(managementRes, "/logon", StringComparison.InvariantCultureIgnoreCase))
             {
-                HandleMngLogonRequest(httpCtx);
+                HandleMngLogonRequest(httpCtx, httpReqId);
             }
             else if (string.Equals(managementRes, "/beginlogoff", StringComparison.InvariantCultureIgnoreCase))
             {
-                HandleMngBeginLogoff(httpCtx);
+                HandleMngBeginLogoff(httpCtx, httpReqId);
             }
             else if (string.Equals(managementRes, "/logoffcomplete", StringComparison.InvariantCultureIgnoreCase))
             {
-                HandleMngLogoffComplete(httpCtx);
+                HandleMngLogoffComplete(httpCtx, httpReqId);
             }
             else
             {
@@ -203,9 +214,11 @@ namespace UiT.Inf3200.FrontendServer
             }
         }
 
-        private static void HandleMngLogonRequest(HttpListenerContext httpCtx)
+        private static void HandleMngLogonRequest(HttpListenerContext httpCtx, uint httpReqId)
         {
+            Console.WriteLine("FRONTEND: [{0}] Handling Storage node logon from {1}", httpReqId, httpCtx.Request.RemoteEndPoint);
             var clientId = Guid.NewGuid();
+            Console.WriteLine("FRONTEND: [{0}] Assigning GUID to storage node: {1}", httpReqId, clientId);
 
             var value = new UriBuilder();
             value.Scheme = Uri.UriSchemeHttp;
@@ -215,17 +228,18 @@ namespace UiT.Inf3200.FrontendServer
             storageNodes[clientId] = value.Uri;
             nodeRing[FindNewRingId()] = clientId;
 
-            var ringNodeUriDict = nodeRing.ToDictionary(nodeKvp => nodeKvp.Key, nodeKvp => new[] { nodeKvp.Value.ToString(), storageNodes[nodeKvp.Value].ToString() });
-
             httpCtx.Response.StatusCode = (int)HttpStatusCode.OK;
             httpCtx.Response.ContentType = MediaTypeNames.Application.Octet;
             httpCtx.Response.Close(clientId.ToByteArray(), willBlock: true);
+            Console.WriteLine("FRONTEND: [{0}] Assigned GUID to storage node: {1}", httpReqId, clientId);
 
+            var ringNodeUriDict = nodeRing.ToDictionary(nodeKvp => nodeKvp.Key, nodeKvp => new[] { nodeKvp.Value.ToString(), storageNodes[nodeKvp.Value].ToString() });
             var redistributeClients = storageNodes.Where(kvp => kvp.Key != clientId).ToArray();
 
             var ringNodeSerializer = new DataContractJsonSerializer(ringNodeUriDict.GetType(),
                 new DataContractJsonSerializerSettings { UseSimpleDictionaryFormat = true });
 
+            Console.WriteLine("FRONTEND: [{0}] Serializing ring status to JSON", httpReqId, clientId);
             byte[] ringNodeDataBytes;
             using (var ringNodeMemoryStream = new MemoryStream())
             {
@@ -235,6 +249,7 @@ namespace UiT.Inf3200.FrontendServer
 
             foreach (var redistClient in redistributeClients)
             {
+                Console.WriteLine("FRONTEND: [{0}] Sending REDISTRIBUTE command to storage node {1} at {2}", httpReqId, redistClient.Key, redistClient.Value);
                 var redistRequest = WebRequest.Create(redistClient.Value);
                 redistRequest.Method = "REDISTRIBUTE";
                 redistRequest.ContentType = "application/json";
@@ -244,19 +259,24 @@ namespace UiT.Inf3200.FrontendServer
                 {
                     var paramArray = ar.AsyncState as object[];
                     var req = paramArray[0] as WebRequest;
-                    var dataBytes = paramArray[1] as byte[];
+                    var srcReqId = (uint)paramArray[1];
+                    var dataBytes = paramArray[2] as byte[];
 
                     using (var reqStream = req.EndGetRequestStream(ar))
                         reqStream.Write(dataBytes, 0, dataBytes.Length);
 
-                    using (var resp = req.GetResponse()) { }
-                }, new object[] { redistRequest, ringNodeDataBytes });
+                    using (var resp = req.GetResponse())
+                    {
+                        Console.WriteLine("FRONTEND: [{0}] REDISTRIBUTE command completed at {1}", srcReqId, resp.ResponseUri);
+                    }
+                }, new object[] { redistRequest, httpReqId, ringNodeDataBytes });
             }
         }
 
-        private static void HandleMngBeginLogoff(HttpListenerContext httpCtx)
+        private static void HandleMngBeginLogoff(HttpListenerContext httpCtx, uint httpReqId)
         {
             var nodeId = Guid.Parse(httpCtx.Request.QueryString["nodeid"]);
+            Console.WriteLine("FRONTEND: [{0}] Handling Storage node logoff initiate from {1} at {2}", httpReqId, nodeId, httpCtx.Request.RemoteEndPoint);
             Uri nodeUri;
             if (storageNodes.TryRemove(nodeId, out nodeUri))
             {
@@ -267,6 +287,7 @@ namespace UiT.Inf3200.FrontendServer
                 httpCtx.Response.StatusCode = (int)HttpStatusCode.OK;
                 httpCtx.Response.ContentType = MediaTypeNames.Application.Octet;
                 httpCtx.Response.Close(logoffId.ToByteArray(), willBlock: false);
+                Console.WriteLine("FRONTEND: [{0}] Assigned logoff GUID: {1}", httpReqId, logoffId);
             }
             else
             {
@@ -275,9 +296,10 @@ namespace UiT.Inf3200.FrontendServer
             }
         }
 
-        private static void HandleMngLogoffComplete(HttpListenerContext httpCtx)
+        private static void HandleMngLogoffComplete(HttpListenerContext httpCtx, uint httpReqId)
         {
             var logoffId = Guid.Parse(httpCtx.Request.QueryString["logoffId"]);
+            Console.WriteLine("FRONTEND: [{0}] Handling Storage node logoff completion fro logoff {1} at {2}", httpReqId, logoffId, httpCtx.Request.RemoteEndPoint);
             Uri nodeUri;
             if (logoffsInProgress.TryRemove(logoffId, out nodeUri))
             {
