@@ -22,12 +22,15 @@ namespace UiT.Inf3200.FrontendServer
         static void Main(string[] args)
         {
             AssemblySplash.WriteAssemblySplash();
+            Console.WriteLine();
 
             httpListener.Prefixes.Add("http://+:8181/");
 
             httpListener.Start();
 
-            var kvpAr = httpListener.BeginGetContext(HandleHttpKvpCtxCallback, null);
+            var kvpAr = httpListener.BeginGetContext(HandleHttpCtxCallback, 0U);
+
+            Console.WriteLine("FRONTEND: Server started and ready to accept requests . . .");
 
             ConsoleTools.WriteKeyPressForExit();
 
@@ -37,14 +40,21 @@ namespace UiT.Inf3200.FrontendServer
             Thread.Sleep(1000);
         }
 
-        private static void HandleHttpKvpCtxCallback(IAsyncResult ar)
+        private static void HandleHttpCtxCallback(IAsyncResult ar)
         {
+            Console.WriteLine("FRONTEND: [{0}] Waiting for a new HTTP context . . .", (uint)ar.AsyncState);
             HttpListenerContext httpCtx;
             try { httpCtx = httpListener.EndGetContext(ar); }
-            catch (ObjectDisposedException) { return; }
+            catch (ObjectDisposedException)
+            {
+                Console.WriteLine("FRONTEND: [{0}] Failed to receive a new HTTP context . . .", (uint)ar.AsyncState);
+                return;
+            }
+            catch (HttpListenerException) { return; }
+
             if (httpListener.IsListening)
             {
-                try { httpListener.BeginGetContext(HandleHttpKvpCtxCallback, null); }
+                try { httpListener.BeginGetContext(HandleHttpCtxCallback, 1U + (uint)ar.AsyncState); }
                 catch (Exception) { }
             }
 
@@ -64,6 +74,13 @@ namespace UiT.Inf3200.FrontendServer
             else if (string.Equals(httpMethod, "DIAG", StringComparison.InvariantCultureIgnoreCase))
             {
                 HandleDiagnostics(httpCtx);
+            }
+            else
+            {
+                Console.WriteLine("FRONTEND: [{0}] Intercepted HTTP request with unknown method: {1} . . .", (uint)ar.AsyncState, httpMethod);
+
+                httpCtx.Response.StatusCode = (int)HttpStatusCode.NotImplemented;
+                httpCtx.Response.Close();
             }
         }
 
@@ -136,6 +153,10 @@ namespace UiT.Inf3200.FrontendServer
                     sourceCtx.Request.InputStream.CopyTo(reqStream);
 
                 using (var resp = req.GetResponse()) { }
+
+                sourceCtx.Response.StatusCode = (int)HttpStatusCode.OK;
+                sourceCtx.Response.Close();
+
             }, new object[] { httpCtx, request });
         }
 

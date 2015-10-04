@@ -33,19 +33,26 @@ namespace UiT.Inf3200.StorageNodeServer
             {
                 frontendUri = new Uri(args[0]);
 
+                Console.WriteLine("STORAGE : Logging on Storage node on Frontend ({0}) . . .", frontendUri);
+
                 var logonRequest = WebRequest.Create(new Uri(frontendUri, "logon"));
                 logonRequest.Method = "MANAGE";
                 using (var logonResponse = logonRequest.GetResponse())
                 {
+                    Console.WriteLine("STORAGE : Storage node logged on Frontend ({0}), Assigned node GUID: {0}", frontendUri);
                     using (var memStream = new MemoryStream((int)logonResponse.ContentLength))
                     {
                         logonResponse.GetResponseStream().CopyTo(memStream);
                         nodeGuid = new Guid(memStream.ToArray());
                     }
                 }
+
+                Console.WriteLine("STORAGE : Assigned node GUID: {0}", frontendUri, nodeGuid);
             }
 
-            httpListener.BeginGetContext(HandleHttpCtxCallback, null);
+            httpListener.BeginGetContext(HandleHttpCtxCallback, 0U);
+
+            Console.WriteLine("FRONTEND: Server started and ready to accept requests . . .");
 
             terminateEvent.WaitOne();
 
@@ -61,7 +68,7 @@ namespace UiT.Inf3200.StorageNodeServer
             catch (HttpListenerException) { return; }
             if (httpListener.IsListening)
             {
-                try { httpListener.BeginGetContext(HandleHttpCtxCallback, null); }
+                try { httpListener.BeginGetContext(HandleHttpCtxCallback, 1U + (uint)ar.AsyncState); }
                 catch (Exception) { }
             }
 
