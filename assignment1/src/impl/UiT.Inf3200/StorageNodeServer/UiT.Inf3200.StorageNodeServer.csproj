@@ -56,6 +56,7 @@
     <Compile Include="..\RingNode.cs">
       <Link>RingNode.cs</Link>
     </Compile>
+    <Compile Include="KeyValuePair.cs" />
     <Compile Include="StorageNodeServerProgram.cs" />
     <Compile Include="..\StorageNodeFinder.cs">
       <Link>StorageNodeFinder.cs</Link>
