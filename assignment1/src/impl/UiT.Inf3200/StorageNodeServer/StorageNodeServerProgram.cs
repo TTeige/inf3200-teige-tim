@@ -112,7 +112,10 @@ namespace UiT.Inf3200.StorageNodeServer
             httpCtx.Response.StatusCode = (int)HttpStatusCode.OK;
             httpCtx.Response.ContentType = "application/json";
             using (var targetStream = httpCtx.Response.OutputStream)
+            {
                 serializer.WriteObject(targetStream, kvps);
+                targetStream.Flush();
+            }
         }
 
         private static void HandleSize(HttpListenerContext httpCtx)

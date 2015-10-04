@@ -93,7 +93,10 @@ namespace UiT.Inf3200.FrontendServer
             httpCtx.Response.StatusCode = (int)HttpStatusCode.OK;
             httpCtx.Response.ContentType = "application/json";
             using (var targetStream = httpCtx.Response.OutputStream)
-                ringNodeSerializer.WriteObject(targetStream, ringNodeUriDict); 
+            {
+                ringNodeSerializer.WriteObject(targetStream, ringNodeUriDict);
+                targetStream.Flush();
+            }
         }
 
         private static void HandleKvpGet(HttpListenerContext httpCtx)
@@ -124,7 +127,8 @@ namespace UiT.Inf3200.FrontendServer
                     using (var targetStream = ctx.Response.OutputStream)
                     {
                         using (var respStream = resp.GetResponseStream())
-                            respStream.CopyTo(targetStream); 
+                            respStream.CopyTo(targetStream);
+                        targetStream.Flush();
                     }
                 }
             }, new object[] { httpCtx, request });
