@@ -53,6 +53,9 @@
     <Compile Include="..\..\Properties\AssemblyInfo.Version.cs">
       <Link>Properties\AssemblyInfo.Version.cs</Link>
     </Compile>
+    <Compile Include="..\RingNode.cs">
+      <Link>RingNode.cs</Link>
+    </Compile>
     <Compile Include="FrontendServerProgram.cs" />
     <Compile Include="..\StorageNodeFinder.cs">
       <Link>StorageNodeFinder.cs</Link>

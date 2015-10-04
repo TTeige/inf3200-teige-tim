@@ -7,6 +7,7 @@ using System.Net.Mime;
 using System.Runtime.Serialization.Json;
 using System.ServiceModel.Web;
 using System.Threading;
+using System.Xml.Serialization;
 using THNETII;
 
 namespace UiT.Inf3200.FrontendServer
@@ -83,20 +84,19 @@ namespace UiT.Inf3200.FrontendServer
         {
             Console.WriteLine("FRONTEND: [{0}] Handling Diagnostics request from client {1}", httpReqId, httpCtx.Request.RemoteEndPoint);
             Console.WriteLine("FRONTEND: [{0}] Reading current ring setup", httpReqId);
-            var ringNodeUriDict = nodeRing.ToDictionary(nodeKvp => nodeKvp.Key, nodeKvp => new[] { nodeKvp.Value.ToString(), storageNodes[nodeKvp.Value].ToString() });
-            var ringNodeSerializer = new DataContractJsonSerializer(ringNodeUriDict.GetType(),
-                new DataContractJsonSerializerSettings { UseSimpleDictionaryFormat = true });
+            var ringNodeArray = nodeRing.Select(kvp => new RingNode { RingId = kvp.Key, NodeGuid = kvp.Value, NodeUri = storageNodes[kvp.Value].ToString() }).ToArray();
+            var ringNodeSerializer = new XmlSerializer(ringNodeArray.GetType(), new XmlRootAttribute { ElementName = "Ring" });
 
             httpCtx.Response.StatusCode = (int)HttpStatusCode.OK;
-            httpCtx.Response.ContentType = "application/json";
+            httpCtx.Response.ContentType = MediaTypeNames.Text.Xml;
             using (var targetStream = new MemoryStream())
             {
-                Console.WriteLine("FRONTEND: [{0}] Serializing ring status to JSON", httpReqId);
+                Console.WriteLine("FRONTEND: [{0}] Serializing ring status to XML", httpReqId);
 
-                ringNodeSerializer.WriteObject(targetStream, ringNodeUriDict);
+                ringNodeSerializer.Serialize(targetStream, ringNodeArray);
                 targetStream.Flush();
 
-                Console.WriteLine("FRONTEND: [{0}] Sending JSON response to client", httpReqId);
+                Console.WriteLine("FRONTEND: [{0}] Sending XMl response to client", httpReqId);
                 httpCtx.Response.Close(targetStream.ToArray(), willBlock: false);
             }
         }
@@ -233,17 +233,16 @@ namespace UiT.Inf3200.FrontendServer
             httpCtx.Response.Close(clientId.ToByteArray(), willBlock: true);
             Console.WriteLine("FRONTEND: [{0}] Assigned GUID to storage node: {1}", httpReqId, clientId);
 
-            var ringNodeUriDict = nodeRing.ToDictionary(nodeKvp => nodeKvp.Key, nodeKvp => new[] { nodeKvp.Value.ToString(), storageNodes[nodeKvp.Value].ToString() });
+            var ringNodeArray = nodeRing.Select(kvp => new RingNode { RingId = kvp.Key, NodeGuid = kvp.Value, NodeUri = storageNodes[kvp.Value].ToString() }).ToArray();
             var redistributeClients = storageNodes.Where(kvp => kvp.Key != clientId).ToArray();
 
-            var ringNodeSerializer = new DataContractJsonSerializer(ringNodeUriDict.GetType(),
-                new DataContractJsonSerializerSettings { UseSimpleDictionaryFormat = true });
+            var ringNodeSerializer = new XmlSerializer(ringNodeArray.GetType(), new XmlRootAttribute { ElementName = "Ring" });
 
-            Console.WriteLine("FRONTEND: [{0}] Serializing ring status to JSON", httpReqId, clientId);
+            Console.WriteLine("FRONTEND: [{0}] Serializing ring status to XML", httpReqId, clientId);
             byte[] ringNodeDataBytes;
             using (var ringNodeMemoryStream = new MemoryStream())
             {
-                ringNodeSerializer.WriteObject(ringNodeMemoryStream, ringNodeUriDict);
+                ringNodeSerializer.Serialize(ringNodeMemoryStream, ringNodeArray);
                 ringNodeDataBytes = ringNodeMemoryStream.ToArray();
             }
 
@@ -252,7 +251,7 @@ namespace UiT.Inf3200.FrontendServer
                 Console.WriteLine("FRONTEND: [{0}] Sending REDISTRIBUTE command to storage node {1} at {2}", httpReqId, redistClient.Key, redistClient.Value);
                 var redistRequest = WebRequest.Create(redistClient.Value);
                 redistRequest.Method = "REDISTRIBUTE";
-                redistRequest.ContentType = "application/json";
+                redistRequest.ContentType = MediaTypeNames.Text.Xml;
                 redistRequest.ContentLength = ringNodeDataBytes.LongLength;
 
                 redistRequest.BeginGetRequestStream(ar =>

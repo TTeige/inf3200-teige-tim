@@ -8,6 +8,7 @@ using System.Net.Mime;
 using System.Runtime.Serialization.Json;
 using System.Text;
 using System.Threading;
+using System.Xml.Serialization;
 using THNETII;
 
 namespace UiT.Inf3200.StorageNodeServer
@@ -130,16 +131,15 @@ namespace UiT.Inf3200.StorageNodeServer
 
         private static void HandleRedistribute(HttpListenerContext httpCtx)
         {
-            var serializer = new DataContractJsonSerializer(typeof(Dictionary<int, string[]>),
-                new DataContractJsonSerializerSettings { UseSimpleDictionaryFormat = true });
-            Dictionary<int, string[]> nodeRingDict;
+            var serializer = new XmlSerializer(typeof(RingNode[]), new XmlRootAttribute { ElementName = "Ring" });
+            RingNode[] nodeRingArrays;
             using (var sourceStream = httpCtx.Request.InputStream)
-                nodeRingDict = serializer.ReadObject(sourceStream) as Dictionary<int, string[]>;
-            if (nodeRingDict == null)
+                nodeRingArrays = serializer.Deserialize(sourceStream) as RingNode[];
+            if (nodeRingArrays == null)
                 return;
 
-            var nodeRingGuidDict = nodeRingDict.ToDictionary(kvp => kvp.Key, kvp => Guid.Parse(kvp.Value[0]));
-            var storageNodeDict = nodeRingDict.Values.ToDictionary(v => Guid.Parse(v[0]), v => new Uri(v[1]));
+            var nodeRingGuidDict = nodeRingArrays.ToDictionary(nd => nd.RingId, nd => nd.NodeGuid);
+            var storageNodeDict = nodeRingArrays.ToDictionary(nd => nd.NodeGuid, nd => new Uri(nd.NodeUri));
 
             var nodeRingKeys = nodeRingGuidDict.Keys.ToArray();
             var kvpArray = kvps.ToArray();
