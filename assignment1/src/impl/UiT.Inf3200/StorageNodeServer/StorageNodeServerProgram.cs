@@ -29,16 +29,19 @@ namespace UiT.Inf3200.StorageNodeServer
 
             httpListener.Start();
 
-            frontendUri = new Uri(args[0]);
-
-            var logonRequest = WebRequest.Create(new Uri(frontendUri, "management/logon"));
-            logonRequest.Method = WebRequestMethods.Http.Get;
-            using (var logonResponse = logonRequest.GetResponse())
+            if (args != null && args.Length > 0)
             {
-                using (var memStream = new MemoryStream((int)logonResponse.ContentLength))
+                frontendUri = new Uri(args[0]);
+
+                var logonRequest = WebRequest.Create(new Uri(frontendUri, "management/logon"));
+                logonRequest.Method = WebRequestMethods.Http.Get;
+                using (var logonResponse = logonRequest.GetResponse())
                 {
-                    logonResponse.GetResponseStream().CopyTo(memStream);
-                    nodeGuid = new Guid(memStream.ToArray());
+                    using (var memStream = new MemoryStream((int)logonResponse.ContentLength))
+                    {
+                        logonResponse.GetResponseStream().CopyTo(memStream);
+                        nodeGuid = new Guid(memStream.ToArray());
+                    }
                 }
             }
 
@@ -55,6 +58,7 @@ namespace UiT.Inf3200.StorageNodeServer
             HttpListenerContext httpCtx;
             try { httpCtx = httpListener.EndGetContext(ar); }
             catch (ObjectDisposedException) { return; }
+            catch (HttpListenerException) { return; }
             if (httpListener.IsListening)
             {
                 try { httpListener.BeginGetContext(HandleHttpCtxCallback, null); }
@@ -73,6 +77,7 @@ namespace UiT.Inf3200.StorageNodeServer
             else if (string.Equals(httpMethod, "TERMINATE", StringComparison.InvariantCultureIgnoreCase))
             {
                 HandleTerminte(httpCtx);
+                terminateEvent.Set();
             }
             else if (string.Equals(httpMethod, "SIZE", StringComparison.InvariantCultureIgnoreCase))
             {
@@ -82,11 +87,25 @@ namespace UiT.Inf3200.StorageNodeServer
             {
                 HandleRedistribute(httpCtx);
             }
+            else if (string.Equals(httpMethod, "DIAG", StringComparison.InvariantCultureIgnoreCase))
+            {
+                HandleDiagnostics(httpCtx);
+            }
             else
             {
                 httpCtx.Response.StatusCode = (int)HttpStatusCode.NotImplemented;
                 httpCtx.Response.Close();
             }
+        }
+
+        private static void HandleDiagnostics(HttpListenerContext httpCtx)
+        {
+            var serializer = new DataContractJsonSerializer(kvps.GetType(),
+                new DataContractJsonSerializerSettings { UseSimpleDictionaryFormat = true });
+            httpCtx.Response.StatusCode = (int)HttpStatusCode.OK;
+            httpCtx.Response.ContentType = "application/json";
+            serializer.WriteObject(httpCtx.Response.OutputStream, kvps);
+            httpCtx.Response.Close();
         }
 
         private static void HandleSize(HttpListenerContext httpCtx)
@@ -113,17 +132,46 @@ namespace UiT.Inf3200.StorageNodeServer
             {
                 bool storageNodeFound;
                 Tuple<Guid, Uri> targetNodeInfo;
-                do
-                {
-                    targetNodeInfo = StorageNodeFinder.FindStorageNode(nodeRingKeys,
-                            kvp.Key.GetHashCode(), nodeRingGuidDict, storageNodeDict, out storageNodeFound); 
-                } while (!storageNodeFound);
+                targetNodeInfo = StorageNodeFinder.FindStorageNode(nodeRingKeys,
+                    kvp.Key.GetHashCode(), nodeRingGuidDict, storageNodeDict, out storageNodeFound);
+                if (!storageNodeFound)
+                    continue;
 
+                if (targetNodeInfo.Item1 != nodeGuid)
+                {
+                    var otherNodePutRequest = WebRequest.Create(new Uri(targetNodeInfo.Item2, kvp.Key));
+                    otherNodePutRequest.Method = WebRequestMethods.Http.Put;
+                    otherNodePutRequest.ContentLength = kvp.Value.LongLength;
+                    otherNodePutRequest.BeginGetRequestStream(ar =>
+                    {
+                        var paramArray = ar.AsyncState as object[];
+                        var dataBytes = paramArray[0] as byte[];
+                        var req = paramArray[1] as WebRequest;
+
+                        using (var reqStream = req.EndGetRequestStream(ar))
+                        {
+                            reqStream.Write(dataBytes, 0, dataBytes.Length);
+                            reqStream.Flush();
+                        }
+                        using (var resp = req.GetResponse()) { }
+                    }, new object[] { kvp.Value, otherNodePutRequest });
+
+                    byte[] ignoreValue;
+                    kvps.TryRemove(kvp.Key, out ignoreValue);
+                }
             }
         }
 
         private static void HandleTerminte(HttpListenerContext httpCtx)
         {
+            if (frontendUri == null)
+            {
+                httpCtx.Response.StatusCode = (int)HttpStatusCode.OK;
+                httpCtx.Response.Close(new byte[0], willBlock: true);
+                httpListener.Stop();
+                return;
+            }
+
             var beginLogoffRequest = WebRequest.Create(new Uri(frontendUri, "management/beginlogoff?nodeid=" + Uri.EscapeUriString(nodeGuid.ToString())));
             beginLogoffRequest.Method = WebRequestMethods.Http.Get;
             Guid logoffGuid;
@@ -136,6 +184,8 @@ namespace UiT.Inf3200.StorageNodeServer
                 }
             }
 
+            httpCtx.Response.StatusCode = (int)HttpStatusCode.OK;
+            httpCtx.Response.Close(new byte[0], willBlock: true);
             httpListener.Stop();
 
             var frontendClient = new WebClient() { BaseAddress = frontendUri.ToString() };
