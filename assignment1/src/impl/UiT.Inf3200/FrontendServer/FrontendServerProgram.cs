@@ -94,7 +94,6 @@ namespace UiT.Inf3200.FrontendServer
             httpCtx.Response.ContentType = "application/json";
             using (var targetStream = httpCtx.Response.OutputStream)
                 ringNodeSerializer.WriteObject(targetStream, ringNodeUriDict); 
-            httpCtx.Response.Close();
         }
 
         private static void HandleKvpGet(HttpListenerContext httpCtx)
@@ -127,7 +126,6 @@ namespace UiT.Inf3200.FrontendServer
                         using (var respStream = resp.GetResponseStream())
                             respStream.CopyTo(targetStream); 
                     }
-                    ctx.Response.Close();
                 }
             }, new object[] { httpCtx, request });
         }
@@ -266,7 +264,7 @@ namespace UiT.Inf3200.FrontendServer
             else
             {
                 httpCtx.Response.StatusCode = (int)HttpStatusCode.NotFound;
-                httpCtx.Response.Close();
+                httpCtx.Response.Close(new byte[0], willBlock: false);
             }
         }
 

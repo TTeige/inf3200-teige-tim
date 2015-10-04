@@ -113,7 +113,6 @@ namespace UiT.Inf3200.StorageNodeServer
             httpCtx.Response.ContentType = "application/json";
             using (var targetStream = httpCtx.Response.OutputStream)
                 serializer.WriteObject(targetStream, kvps);
-            httpCtx.Response.Close();
         }
 
         private static void HandleSize(HttpListenerContext httpCtx)
@@ -127,7 +126,9 @@ namespace UiT.Inf3200.StorageNodeServer
         {
             var serializer = new DataContractJsonSerializer(typeof(Dictionary<int, string[]>),
                 new DataContractJsonSerializerSettings { UseSimpleDictionaryFormat = true });
-            var nodeRingDict = serializer.ReadObject(httpCtx.Request.InputStream) as Dictionary<int, string[]>;
+            Dictionary<int, string[]> nodeRingDict;
+            using (var sourceStream = httpCtx.Request.InputStream)
+                nodeRingDict = serializer.ReadObject(sourceStream) as Dictionary<int, string[]>;
             if (nodeRingDict == null)
                 return;
 
