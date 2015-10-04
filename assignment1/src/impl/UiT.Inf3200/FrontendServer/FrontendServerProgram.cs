@@ -62,6 +62,22 @@ namespace UiT.Inf3200.FrontendServer
             {
                 HandleKvpPut(httpCtx);
             }
+            else if (string.Equals(httpMethod, "DIAG", StringComparison.InvariantCultureIgnoreCase))
+            {
+                HandleDiagnostics(httpCtx);
+            }
+        }
+
+        private static void HandleDiagnostics(HttpListenerContext httpCtx)
+        {
+            var ringNodeUriDict = nodeRing.ToDictionary(nodeKvp => nodeKvp.Key, nodeKvp => new[] { nodeKvp.Value.ToString(), storageNodes[nodeKvp.Value].ToString() });
+            var ringNodeSerializer = new DataContractJsonSerializer(ringNodeUriDict.GetType(),
+                new DataContractJsonSerializerSettings { UseSimpleDictionaryFormat = true });
+
+            httpCtx.Response.StatusCode = (int)HttpStatusCode.OK;
+            httpCtx.Response.ContentType = "application/json";
+            ringNodeSerializer.WriteObject(httpCtx.Response.OutputStream, ringNodeUriDict);
+            httpCtx.Response.Close();
         }
 
         private static void HandleKvpGet(HttpListenerContext httpCtx)
