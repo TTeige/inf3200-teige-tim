@@ -186,7 +186,13 @@ namespace UiT.Inf3200.FrontendServer
 
         private static Uri FindStorageNode(int hashCode, out bool success)
         {
-            var keys = nodeRing.Keys.ToArray();
+            if (nodeRing.IsEmpty)
+            {
+                success = false;
+                return null;
+            }
+
+            var keys = nodeRing.Select(kvp => kvp.Key).ToArray();
             Array.Sort(keys);
             var nodeInfo = StorageNodeFinder.FindStorageNode(keys, hashCode, nodeRing, storageNodes, out success);
             if (nodeInfo == null)
