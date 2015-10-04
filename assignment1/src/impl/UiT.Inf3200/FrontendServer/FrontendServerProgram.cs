@@ -13,8 +13,7 @@ namespace UiT.Inf3200.FrontendServer
 {
     class FrontendServerProgram
     {
-        private static HttpListener httpMngListener = new HttpListener();
-        private static HttpListener httpKvpListener = new HttpListener();
+        private static HttpListener httpListener = new HttpListener();
 
         private static ConcurrentDictionary<Guid, Uri> storageNodes = new ConcurrentDictionary<Guid, Uri>();
         private static ConcurrentDictionary<Guid, Uri> logoffsInProgress = new ConcurrentDictionary<Guid, Uri>();
@@ -24,19 +23,15 @@ namespace UiT.Inf3200.FrontendServer
         {
             AssemblySplash.WriteAssemblySplash();
 
-            httpMngListener.Prefixes.Add("http://*:8181/management");
-            httpKvpListener.Prefixes.Add("http://*:8181/");
+            httpListener.Prefixes.Add("http://+:8181/");
 
-            httpMngListener.Start();
-            httpKvpListener.Start();
+            httpListener.Start();
 
-            var mngAr = httpMngListener.BeginGetContext(HandleHttpMngCtxCallback, null);
-            var kvpAr = httpKvpListener.BeginGetContext(HandleHttpKvpCtxCallback, null);
+            var kvpAr = httpListener.BeginGetContext(HandleHttpKvpCtxCallback, null);
 
             ConsoleTools.WriteKeyPressForExit();
 
-            httpMngListener.Stop();
-            httpKvpListener.Stop();
+            httpListener.Stop();
 
             Console.WriteLine("Waiting one second for all connection threads to gracefully terminate . . .");
             Thread.Sleep(1000);
@@ -45,11 +40,11 @@ namespace UiT.Inf3200.FrontendServer
         private static void HandleHttpKvpCtxCallback(IAsyncResult ar)
         {
             HttpListenerContext httpCtx;
-            try { httpCtx = httpKvpListener.EndGetContext(ar); }
+            try { httpCtx = httpListener.EndGetContext(ar); }
             catch (ObjectDisposedException) { return; }
-            if (httpKvpListener.IsListening)
+            if (httpListener.IsListening)
             {
-                try { httpKvpListener.BeginGetContext(HandleHttpKvpCtxCallback, null); }
+                try { httpListener.BeginGetContext(HandleHttpKvpCtxCallback, null); }
                 catch (Exception) { }
             }
 
@@ -61,6 +56,10 @@ namespace UiT.Inf3200.FrontendServer
             else if (string.Equals(httpMethod, WebRequestMethods.Http.Put, StringComparison.InvariantCultureIgnoreCase))
             {
                 HandleKvpPut(httpCtx);
+            }
+            else if (string.Equals(httpMethod, "MANAGE", StringComparison.InvariantCultureIgnoreCase))
+            {
+                HandleHttpMngCtxCallback(httpCtx);
             }
             else if (string.Equals(httpMethod, "DIAG", StringComparison.InvariantCultureIgnoreCase))
             {
@@ -150,30 +149,20 @@ namespace UiT.Inf3200.FrontendServer
             return nodeInfo.Item2;
         }
 
-        private static void HandleHttpMngCtxCallback(IAsyncResult ar)
+        private static void HandleMngCtx(HttpListenerContext httpCtx)
         {
-            HttpListenerContext httpCtx;
-            try { httpCtx = httpMngListener.EndGetContext(ar); }
-            catch (ObjectDisposedException) { return; }
-            if (httpMngListener.IsListening)
-            {
-                try { httpMngListener.BeginGetContext(HandleHttpMngCtxCallback, null); }
-                catch (Exception) { }
-            }
-
             var httpUrl = httpCtx.Request.Url;
-            var httpQuery = httpCtx.Request.QueryString;
 
-            var managementRes = httpUrl.Segments.Last();
-            if (string.Equals(managementRes, "logon", StringComparison.InvariantCultureIgnoreCase))
+            var managementRes = httpUrl.LocalPath;
+            if (string.Equals(managementRes, "/logon", StringComparison.InvariantCultureIgnoreCase))
             {
                 HandleMngLogonRequest(httpCtx);
             }
-            else if (string.Equals(managementRes, "beginlogoff", StringComparison.InvariantCultureIgnoreCase))
+            else if (string.Equals(managementRes, "/beginlogoff", StringComparison.InvariantCultureIgnoreCase))
             {
                 HandleMngBeginLogoff(httpCtx);
             }
-            else if (string.Equals(managementRes, "logoffcomplete", StringComparison.InvariantCultureIgnoreCase))
+            else if (string.Equals(managementRes, "/logoffcomplete", StringComparison.InvariantCultureIgnoreCase))
             {
                 HandleMngLogoffComplete(httpCtx);
             }

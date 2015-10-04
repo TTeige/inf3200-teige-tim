@@ -25,7 +25,7 @@ namespace UiT.Inf3200.StorageNodeServer
         {
             AssemblySplash.WriteAssemblySplash();
 
-            httpListener.Prefixes.Add("http://*:8181/");
+            httpListener.Prefixes.Add("http://+:8181/");
 
             httpListener.Start();
 
@@ -33,8 +33,8 @@ namespace UiT.Inf3200.StorageNodeServer
             {
                 frontendUri = new Uri(args[0]);
 
-                var logonRequest = WebRequest.Create(new Uri(frontendUri, "management/logon"));
-                logonRequest.Method = WebRequestMethods.Http.Get;
+                var logonRequest = WebRequest.Create(new Uri(frontendUri, "logon"));
+                logonRequest.Method = "MANAGE";
                 using (var logonResponse = logonRequest.GetResponse())
                 {
                     using (var memStream = new MemoryStream((int)logonResponse.ContentLength))
@@ -172,8 +172,8 @@ namespace UiT.Inf3200.StorageNodeServer
                 return;
             }
 
-            var beginLogoffRequest = WebRequest.Create(new Uri(frontendUri, "management/beginlogoff?nodeid=" + Uri.EscapeUriString(nodeGuid.ToString())));
-            beginLogoffRequest.Method = WebRequestMethods.Http.Get;
+            var beginLogoffRequest = WebRequest.Create(new Uri(frontendUri, "beginlogoff?nodeid=" + Uri.EscapeUriString(nodeGuid.ToString())));
+            beginLogoffRequest.Method = "MANAGE";
             Guid logoffGuid;
             using (var beginLogoffResponse = beginLogoffRequest.GetResponse())
             {
@@ -200,8 +200,8 @@ namespace UiT.Inf3200.StorageNodeServer
                 }
             }
 
-            var LogoffCompleteRequest = WebRequest.Create(new Uri(frontendUri, "management/logoffcomplete?logoffId=" + Uri.EscapeUriString(logoffGuid.ToString())));
-            LogoffCompleteRequest.Method = WebRequestMethods.Http.Get;
+            var LogoffCompleteRequest = WebRequest.Create(new Uri(frontendUri, "logoffcomplete?logoffId=" + Uri.EscapeUriString(logoffGuid.ToString())));
+            beginLogoffRequest.Method = "MANAGE";
             using (var logoffCompleteReponse = LogoffCompleteRequest.GetResponse()) { }
         }
 
