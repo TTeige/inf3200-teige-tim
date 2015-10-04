@@ -84,7 +84,11 @@ namespace UiT.Inf3200.FrontendServer
         {
             Console.WriteLine("FRONTEND: [{0}] Handling Diagnostics request from client {1}", httpReqId, httpCtx.Request.RemoteEndPoint);
             Console.WriteLine("FRONTEND: [{0}] Reading current ring setup", httpReqId);
-            var ringNodeArray = nodeRing.Select(kvp => new RingNode { RingId = kvp.Key, NodeGuid = kvp.Value, NodeUri = storageNodes[kvp.Value].ToString() }).ToArray();
+            RingNode[] ringNodeArray;
+            if (nodeRing.IsEmpty)
+                ringNodeArray = new RingNode[0];
+            else
+                ringNodeArray = nodeRing.Select(kvp => new RingNode { RingId = kvp.Key, NodeGuid = kvp.Value, NodeUri = storageNodes[kvp.Value].ToString() }).ToArray();
             var ringNodeSerializer = new XmlSerializer(ringNodeArray.GetType(), new XmlRootAttribute { ElementName = "Ring" });
 
             httpCtx.Response.StatusCode = (int)HttpStatusCode.OK;
@@ -298,7 +302,7 @@ namespace UiT.Inf3200.FrontendServer
         private static void HandleMngLogoffComplete(HttpListenerContext httpCtx, uint httpReqId)
         {
             var logoffId = Guid.Parse(httpCtx.Request.QueryString["logoffId"]);
-            Console.WriteLine("FRONTEND: [{0}] Handling Storage node logoff completion fro logoff {1} at {2}", httpReqId, logoffId, httpCtx.Request.RemoteEndPoint);
+            Console.WriteLine("FRONTEND: [{0}] Handling Storage node logoff completion from logoff {1} at {2}", httpReqId, logoffId, httpCtx.Request.RemoteEndPoint);
             Uri nodeUri;
             if (logoffsInProgress.TryRemove(logoffId, out nodeUri))
             {
