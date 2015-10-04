@@ -80,7 +80,7 @@ namespace UiT.Inf3200.FrontendServer
                 Console.WriteLine("FRONTEND: [{0}] Intercepted HTTP request with unknown method: {1} . . .", (uint)ar.AsyncState, httpMethod);
 
                 httpCtx.Response.StatusCode = (int)HttpStatusCode.NotImplemented;
-                httpCtx.Response.Close();
+                httpCtx.Response.Close(new byte[0], willBlock: false);
             }
         }
 
@@ -92,7 +92,8 @@ namespace UiT.Inf3200.FrontendServer
 
             httpCtx.Response.StatusCode = (int)HttpStatusCode.OK;
             httpCtx.Response.ContentType = "application/json";
-            ringNodeSerializer.WriteObject(httpCtx.Response.OutputStream, ringNodeUriDict);
+            using (var targetStream = httpCtx.Response.OutputStream)
+                ringNodeSerializer.WriteObject(targetStream, ringNodeUriDict); 
             httpCtx.Response.Close();
         }
 
@@ -121,8 +122,11 @@ namespace UiT.Inf3200.FrontendServer
                     ctx.Response.ContentLength64 = resp.ContentLength;
                     ctx.Response.ContentType = resp.ContentType;
 
-                    using (var respStream = resp.GetResponseStream())
-                        respStream.CopyTo(ctx.Response.OutputStream);
+                    using (var targetStream = ctx.Response.OutputStream)
+                    {
+                        using (var respStream = resp.GetResponseStream())
+                            respStream.CopyTo(targetStream); 
+                    }
                     ctx.Response.Close();
                 }
             }, new object[] { httpCtx, request });
@@ -155,7 +159,7 @@ namespace UiT.Inf3200.FrontendServer
                 using (var resp = req.GetResponse()) { }
 
                 sourceCtx.Response.StatusCode = (int)HttpStatusCode.OK;
-                sourceCtx.Response.Close();
+                sourceCtx.Response.Close(new byte[0], willBlock: false);
 
             }, new object[] { httpCtx, request });
         }
@@ -190,7 +194,7 @@ namespace UiT.Inf3200.FrontendServer
             else
             {
                 httpCtx.Response.StatusCode = (int)HttpStatusCode.NotFound;
-                httpCtx.Response.Close();
+                httpCtx.Response.Close(new byte[0], willBlock: false);
             }
         }
 
@@ -278,7 +282,7 @@ namespace UiT.Inf3200.FrontendServer
             {
                 httpCtx.Response.StatusCode = (int)HttpStatusCode.NotFound;
             }
-            httpCtx.Response.Close();
+            httpCtx.Response.Close(new byte[0], willBlock: false);
         }
 
         private static int FindNewRingId()

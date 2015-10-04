@@ -101,7 +101,7 @@ namespace UiT.Inf3200.StorageNodeServer
             else
             {
                 httpCtx.Response.StatusCode = (int)HttpStatusCode.NotImplemented;
-                httpCtx.Response.Close();
+                httpCtx.Response.Close(new byte[0], willBlock: false);
             }
         }
 
@@ -111,7 +111,8 @@ namespace UiT.Inf3200.StorageNodeServer
                 new DataContractJsonSerializerSettings { UseSimpleDictionaryFormat = true });
             httpCtx.Response.StatusCode = (int)HttpStatusCode.OK;
             httpCtx.Response.ContentType = "application/json";
-            serializer.WriteObject(httpCtx.Response.OutputStream, kvps);
+            using (var targetStream = httpCtx.Response.OutputStream)
+                serializer.WriteObject(targetStream, kvps);
             httpCtx.Response.Close();
         }
 
@@ -167,6 +168,9 @@ namespace UiT.Inf3200.StorageNodeServer
                     kvps.TryRemove(kvp.Key, out ignoreValue);
                 }
             }
+
+            httpCtx.Response.StatusCode = (int)HttpStatusCode.OK;
+            httpCtx.Response.Close(new byte[0], willBlock: false);
         }
 
         private static void HandleTerminte(HttpListenerContext httpCtx)
@@ -224,7 +228,7 @@ namespace UiT.Inf3200.StorageNodeServer
             else
             {
                 httpCtx.Response.StatusCode = (int)HttpStatusCode.NotFound;
-                httpCtx.Response.Close();
+                httpCtx.Response.Close(new byte[0], willBlock: true);
             }
         }
 
@@ -241,7 +245,7 @@ namespace UiT.Inf3200.StorageNodeServer
             kvps[key] = value;
 
             httpCtx.Response.StatusCode = (int)HttpStatusCode.OK;
-            httpCtx.Response.Close();
+            httpCtx.Response.Close(new byte[0], willBlock: true);
         }
     }
 }
