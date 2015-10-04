@@ -92,10 +92,13 @@ namespace UiT.Inf3200.FrontendServer
 
             httpCtx.Response.StatusCode = (int)HttpStatusCode.OK;
             httpCtx.Response.ContentType = "application/json";
-            using (var targetStream = httpCtx.Response.OutputStream)
+            using (var targetStream = new MemoryStream())
             {
                 ringNodeSerializer.WriteObject(targetStream, ringNodeUriDict);
                 targetStream.Flush();
+
+                httpCtx.Response.ContentLength64 = targetStream.Length;
+                httpCtx.Response.Close(targetStream.ToArray(), willBlock: false);
             }
         }
 

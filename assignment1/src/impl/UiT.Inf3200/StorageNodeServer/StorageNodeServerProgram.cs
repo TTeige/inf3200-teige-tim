@@ -111,10 +111,13 @@ namespace UiT.Inf3200.StorageNodeServer
                 new DataContractJsonSerializerSettings { UseSimpleDictionaryFormat = true });
             httpCtx.Response.StatusCode = (int)HttpStatusCode.OK;
             httpCtx.Response.ContentType = "application/json";
-            using (var targetStream = httpCtx.Response.OutputStream)
+            using (var targetStream = new MemoryStream())
             {
                 serializer.WriteObject(targetStream, kvps);
                 targetStream.Flush();
+
+                httpCtx.Response.ContentLength64 = targetStream.Length;
+                httpCtx.Response.Close(targetStream.ToArray(), willBlock: false);
             }
         }
 
