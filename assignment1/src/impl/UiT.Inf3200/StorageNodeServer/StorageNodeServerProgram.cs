@@ -85,7 +85,10 @@ namespace UiT.Inf3200.StorageNodeServer
             var httpMethod = httpCtx.Request.HttpMethod;
             if (string.Equals(httpMethod, WebRequestMethods.Http.Get, StringComparison.InvariantCultureIgnoreCase))
             {
-                HandleKvpGet(httpCtx);
+                if (string.Equals("/", httpCtx.Request.Url.LocalPath))
+			HandleDiagnostics(httpCtx);
+		else
+			HandleKvpGet(httpCtx);
             }
             else if (string.Equals(httpMethod, WebRequestMethods.Http.Put, StringComparison.InvariantCultureIgnoreCase))
             {

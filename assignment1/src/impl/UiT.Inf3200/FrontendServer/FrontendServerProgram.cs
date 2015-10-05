@@ -59,7 +59,10 @@ namespace UiT.Inf3200.FrontendServer
             var httpMethod = httpCtx.Request.HttpMethod;
             if (string.Equals(httpMethod, WebRequestMethods.Http.Get, StringComparison.InvariantCultureIgnoreCase))
             {
-                HandleKvpGet(httpCtx, (uint)ar.AsyncState);
+                if (string.Equals("/", httpCtx.Request.Url.LocalPath))
+			HandleDiagnostics(httpCtx, (uint)ar.AsyncState);
+		else
+			HandleKvpGet(httpCtx, (uint)ar.AsyncState);
             }
             else if (string.Equals(httpMethod, WebRequestMethods.Http.Put, StringComparison.InvariantCultureIgnoreCase))
             {
