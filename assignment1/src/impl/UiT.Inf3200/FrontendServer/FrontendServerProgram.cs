@@ -229,16 +229,26 @@ namespace UiT.Inf3200.FrontendServer
             value.Host = httpCtx.Request.RemoteEndPoint.Address.ToString();
             value.Port = 8181;
 
+            var ringId = FindNewRingId();
+
             storageNodes[clientId] = value.Uri;
-            nodeRing[FindNewRingId()] = clientId;
+            var ringWasEmpty = nodeRing.IsEmpty;
+            nodeRing[ringId] = clientId;
 
             httpCtx.Response.StatusCode = (int)HttpStatusCode.OK;
             httpCtx.Response.ContentType = MediaTypeNames.Application.Octet;
             httpCtx.Response.Close(clientId.ToByteArray(), willBlock: true);
             Console.WriteLine("FRONTEND: [{0}] Assigned GUID to storage node: {1}", httpReqId, clientId);
 
-            var ringNodeArray = nodeRing.ToArray().Select(kvp => new RingNode { RingId = kvp.Key, NodeGuid = kvp.Value, NodeUri = storageNodes[kvp.Value].ToString() }).ToArray();
-            var redistributeClients = storageNodes.ToArray().Where(kvp => kvp.Key != clientId).ToArray();
+            if (ringWasEmpty)
+                return;
+
+            var nodeRingOrdered = nodeRing.ToArray().OrderBy(kvp => kvp.Key);
+            var ringNodeArray = nodeRingOrdered.Select(kvp => new RingNode { RingId = kvp.Key, NodeGuid = kvp.Value, NodeUri = storageNodes[kvp.Value].ToString() }).ToArray();
+            
+            var redistributeClient = nodeRingOrdered.SkipWhile(kvp => kvp.Key <= ringId);
+
+            var redistClient = redistributeClient.Any() ? redistributeClient.First() : nodeRingOrdered.First();
 
             var ringNodeSerializer = new XmlSerializer(ringNodeArray.GetType(), new XmlRootAttribute { ElementName = "Ring" });
 
@@ -250,10 +260,11 @@ namespace UiT.Inf3200.FrontendServer
                 ringNodeDataBytes = ringNodeMemoryStream.ToArray();
             }
 
-            foreach (var redistClient in redistributeClients)
+            Uri redistributeUri;
+            if (storageNodes.TryGetValue(redistClient.Value, out redistributeUri))
             {
-                Console.WriteLine("FRONTEND: [{0}] Sending REDISTRIBUTE command to storage node {1} at {2}", httpReqId, redistClient.Key, redistClient.Value);
-                var redistRequest = WebRequest.Create(redistClient.Value);
+                Console.WriteLine("FRONTEND: [{0}] Sending REDISTRIBUTE command to storage node at {1}", httpReqId, redistributeUri);
+                var redistRequest = WebRequest.Create(redistributeUri);
                 redistRequest.Method = "REDISTRIBUTE";
                 redistRequest.ContentType = MediaTypeNames.Text.Xml;
                 redistRequest.ContentLength = ringNodeDataBytes.LongLength;
