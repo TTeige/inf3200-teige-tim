@@ -1,13 +1,15 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.23107.0
+# Visual Studio 2013
+VisualStudioVersion = 12.0.21005.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "THNETII.Basic", "src\impl\TH-NETII\Basic\THNETII.Basic.csproj", "{41EBD80C-7E60-4D7F-A15B-FC501E114C4C}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UiT.Inf3200.FrontendServer", "src\impl\UiT.Inf3200\FrontendServer\UiT.Inf3200.FrontendServer.csproj", "{FDA75819-BD8E-4ED4-9BFA-F2C90D16A4DA}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UiT.Inf3200.StorageNodeServer", "src\impl\UiT.Inf3200\StorageNodeServer\UiT.Inf3200.StorageNodeServer.csproj", "{EA33F0E4-2511-4096-AF71-D41FB81E3A93}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DistributedVisualization", "DistributedVisualization\DistributedVisualization.csproj", "{95132365-0671-4994-ABC9-A07F0DA53525}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -27,6 +29,10 @@ Global
 		{EA33F0E4-2511-4096-AF71-D41FB81E3A93}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EA33F0E4-2511-4096-AF71-D41FB81E3A93}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{EA33F0E4-2511-4096-AF71-D41FB81E3A93}.Release|Any CPU.Build.0 = Release|Any CPU
+		{95132365-0671-4994-ABC9-A07F0DA53525}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{95132365-0671-4994-ABC9-A07F0DA53525}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{95132365-0671-4994-ABC9-A07F0DA53525}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{95132365-0671-4994-ABC9-A07F0DA53525}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
