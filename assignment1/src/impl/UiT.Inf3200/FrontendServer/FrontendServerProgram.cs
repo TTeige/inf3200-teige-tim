@@ -14,6 +14,8 @@ namespace UiT.Inf3200.FrontendServer
 {
     class FrontendServerProgram
     {
+        private static readonly object managementLockObj = new object();
+
         private static HttpListener httpListener = new HttpListener();
 
         private static ConcurrentDictionary<Guid, Uri> storageNodes = new ConcurrentDictionary<Guid, Uri>();
@@ -25,7 +27,7 @@ namespace UiT.Inf3200.FrontendServer
             AssemblySplash.WriteAssemblySplash();
             Console.WriteLine();
 
-            httpListener.Prefixes.Add("http://+:8181/");
+            httpListener.Prefixes.Add(string.Format("http://+:{0}/", args == null || args.Length < 1 ? "8181" : args[0]));
 
             httpListener.Start();
 
@@ -65,7 +67,10 @@ namespace UiT.Inf3200.FrontendServer
             }
             else if (string.Equals(httpMethod, "MANAGE", StringComparison.InvariantCultureIgnoreCase))
             {
-                HandleMngCtx(httpCtx, (uint)ar.AsyncState);
+                lock (managementLockObj)
+                {
+                    HandleMngCtx(httpCtx, (uint)ar.AsyncState); 
+                }
             }
             else if (string.Equals(httpMethod, "DIAG", StringComparison.InvariantCultureIgnoreCase))
             {
@@ -115,7 +120,7 @@ namespace UiT.Inf3200.FrontendServer
             Console.WriteLine("FRONTEND: [{0}] Determining storage node for key {1} (Hash code: {2})", httpReqId, key, key.GetHashCode());
             do
             {
-                nodeUri = FindStorageNode(key.GetHashCode(), out foundNodeUri);
+                nodeUri = FindStorageNode((byte)(key.GetHashCode() % byte.MaxValue), out foundNodeUri);
             } while (!foundNodeUri);
 
             Console.WriteLine("FRONTEND: [{0}] Requesting key from storage node at {1}", httpReqId, nodeUri);
@@ -156,7 +161,7 @@ namespace UiT.Inf3200.FrontendServer
             Console.WriteLine("FRONTEND: [{0}] Determining storage node for key {1} (Hash code: {2})", httpReqId, key, key.GetHashCode());
             do
             {
-                nodeUri = FindStorageNode(key.GetHashCode(), out foundNodeUri);
+                nodeUri = FindStorageNode((byte)(key.GetHashCode() % byte.MaxValue), out foundNodeUri);
             } while (!foundNodeUri);
 
             Console.WriteLine("FRONTEND: [{0}] Sending key value to storage node at {1}", httpReqId, nodeUri);
@@ -331,15 +336,14 @@ namespace UiT.Inf3200.FrontendServer
 
         private static int FindNewRingId()
         {
-            var nodeRingIds = nodeRing.ToArray().Select(kvp => kvp.Key).ToArray();
+            var nodeRingIds = nodeRing.ToArray().OrderBy(kvp => kvp.Key).Select(kvp => kvp.Key).ToArray();
             if (nodeRingIds.Length < 1)
-                return int.MinValue;
+                return byte.MinValue;
             else if (nodeRingIds.Length < 2)
-                return 0;
+                return 128;
 
-            Array.Sort(nodeRingIds);
             var lastIdx = nodeRingIds.Length - 1;
-            var maxDistance = Tuple.Create(nodeRingIds[0], nodeRingIds[lastIdx], Math.Abs(nodeRingIds[0] - nodeRingIds[lastIdx]));
+            var maxDistance = Tuple.Create(nodeRingIds[0], nodeRingIds[lastIdx], Math.Abs((nodeRingIds[0] + 256) - nodeRingIds[lastIdx]));
             for (int i = 1; i < nodeRingIds.Length; i++)
             {
                 int distance = Math.Abs(nodeRingIds[i] - nodeRingIds[i - 1]);

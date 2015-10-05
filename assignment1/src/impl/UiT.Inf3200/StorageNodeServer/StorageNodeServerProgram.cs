@@ -15,6 +15,8 @@ namespace UiT.Inf3200.StorageNodeServer
 {
     static class StorageNodeServerProgram
     {
+        private static readonly object redistLockObj = new object();
+
         private static ManualResetEvent terminateEvent = new ManualResetEvent(initialState: false);
         private static HttpListener httpListener = new HttpListener();
         private static Guid nodeGuid;
@@ -100,7 +102,10 @@ namespace UiT.Inf3200.StorageNodeServer
             }
             else if (string.Equals(httpMethod, "REDISTRIBUTE", StringComparison.InvariantCultureIgnoreCase))
             {
-                HandleRedistribute(httpCtx);
+                lock (redistLockObj)
+                {
+                    HandleRedistribute(httpCtx); 
+                }
             }
             else if (string.Equals(httpMethod, "DIAG", StringComparison.InvariantCultureIgnoreCase))
             {
@@ -115,14 +120,14 @@ namespace UiT.Inf3200.StorageNodeServer
 
         private static void HandleDiagnostics(HttpListenerContext httpCtx)
         {
-            KeyValuePair[] serializeableKvps;
+            SerializableKeyValuePair[] serializeableKvps;
             if (!kvps.IsEmpty)
             {
-                serializeableKvps = kvps.Select(kvp => new KeyValuePair { Key = kvp.Key, Value = kvp.Value }).ToArray();
+                serializeableKvps = kvps.Select(kvp => new SerializableKeyValuePair { Key = kvp.Key, Value = kvp.Value }).ToArray();
             }
             else
             {
-                serializeableKvps = new KeyValuePair[0];
+                serializeableKvps = new SerializableKeyValuePair[0];
             }
 
             var serializer = new XmlSerializer(serializeableKvps.GetType(), new XmlRootAttribute { ElementName = "KeyValuePairs" });
@@ -164,7 +169,7 @@ namespace UiT.Inf3200.StorageNodeServer
                 bool storageNodeFound;
                 Tuple<Guid, Uri> targetNodeInfo;
                 targetNodeInfo = StorageNodeFinder.FindStorageNode(nodeRingKeys,
-                    kvp.Key.GetHashCode(), nodeRingGuidDict, storageNodeDict, out storageNodeFound);
+                    (byte)(kvp.Key.GetHashCode() % byte.MaxValue), nodeRingGuidDict, storageNodeDict, out storageNodeFound);
                 if (!storageNodeFound)
                     continue;
 
