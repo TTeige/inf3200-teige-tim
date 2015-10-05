@@ -281,6 +281,9 @@ namespace UiT.Inf3200.FrontendServer
             var nodeId = Guid.Parse(httpCtx.Request.QueryString["nodeid"]);
             Console.WriteLine("FRONTEND: [{0}] Handling Storage node logoff initiate from {1} at {2}", httpReqId, nodeId, httpCtx.Request.RemoteEndPoint);
             Uri nodeUri;
+            Guid ignoreGuid;
+            foreach (var ringId in nodeRing.ToArray().Where(kvp => kvp.Value == nodeId).Select(kvp => kvp.Key))
+                nodeRing.TryRemove(ringId, out ignoreGuid);
             if (storageNodes.TryRemove(nodeId, out nodeUri))
             {
                 var logoffId = Guid.NewGuid();
