@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace DistributedVisualization.Properties
+namespace UiT.Inf3200.DistributedVisualization.Properties
 {
 
 

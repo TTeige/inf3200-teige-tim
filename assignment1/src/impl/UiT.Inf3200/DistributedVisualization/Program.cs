@@ -1,14 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net;
-using System.Threading.Tasks;
 using System.Windows.Forms;
-using System.Xml.Serialization;
-using UiT.Inf3200;
-using UiT.Inf3200.StorageNodeServer;
 
-namespace DistributedVisualization
+namespace UiT.Inf3200.DistributedVisualization
 {
     static class Program
     {
