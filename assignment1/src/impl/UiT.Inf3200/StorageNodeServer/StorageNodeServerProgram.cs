@@ -108,13 +108,22 @@ namespace UiT.Inf3200.StorageNodeServer
 
         private static void HandleDiagnostics(HttpListenerContext httpCtx)
         {
-            var serializer = new DataContractJsonSerializer(kvps.GetType(),
-                new DataContractJsonSerializerSettings { UseSimpleDictionaryFormat = true });
+            KeyValuePair[] serializeableKvps;
+            if (!kvps.IsEmpty)
+            {
+                serializeableKvps = kvps.Select(kvp => new KeyValuePair { Key = kvp.Key, Value = kvp.Value }).ToArray();
+            }
+            else
+            {
+                serializeableKvps = new KeyValuePair[0];
+            }
+
+            var serializer = new XmlSerializer(serializeableKvps.GetType(), new XmlRootAttribute { ElementName = "KeyValuePairs" });
             httpCtx.Response.StatusCode = (int)HttpStatusCode.OK;
-            httpCtx.Response.ContentType = "application/json";
+            httpCtx.Response.ContentType = MediaTypeNames.Text.Xml;
             using (var targetStream = new MemoryStream())
             {
-                serializer.WriteObject(targetStream, kvps);
+                serializer.Serialize(targetStream, serializeableKvps);
                 targetStream.Flush();
 
                 httpCtx.Response.ContentLength64 = targetStream.Length;
