@@ -25,7 +25,7 @@ namespace UiT.Inf3200.FrontendServer
             AssemblySplash.WriteAssemblySplash();
             Console.WriteLine();
 
-            httpListener.Prefixes.Add("http://+:8181/");
+            httpListener.Prefixes.Add(string.Format("http://+:{0}/", args == null || args.Length < 1 ? "8181" : args[0]));
 
             httpListener.Start();
 
@@ -115,7 +115,7 @@ namespace UiT.Inf3200.FrontendServer
             Console.WriteLine("FRONTEND: [{0}] Determining storage node for key {1} (Hash code: {2})", httpReqId, key, key.GetHashCode());
             do
             {
-                nodeUri = FindStorageNode(key.GetHashCode(), out foundNodeUri);
+                nodeUri = FindStorageNode((byte)(key.GetHashCode() % byte.MaxValue), out foundNodeUri);
             } while (!foundNodeUri);
 
             Console.WriteLine("FRONTEND: [{0}] Requesting key from storage node at {1}", httpReqId, nodeUri);
@@ -156,7 +156,7 @@ namespace UiT.Inf3200.FrontendServer
             Console.WriteLine("FRONTEND: [{0}] Determining storage node for key {1} (Hash code: {2})", httpReqId, key, key.GetHashCode());
             do
             {
-                nodeUri = FindStorageNode(key.GetHashCode(), out foundNodeUri);
+                nodeUri = FindStorageNode((byte)(key.GetHashCode() % byte.MaxValue), out foundNodeUri);
             } while (!foundNodeUri);
 
             Console.WriteLine("FRONTEND: [{0}] Sending key value to storage node at {1}", httpReqId, nodeUri);
@@ -331,23 +331,23 @@ namespace UiT.Inf3200.FrontendServer
 
         private static int FindNewRingId()
         {
-            var nodeRingIds = nodeRing.ToArray().Select(kvp => kvp.Key).ToArray();
+            var nodeRingIds = nodeRing.ToArray().Select(kvp => (long)kvp.Key).ToArray();
             if (nodeRingIds.Length < 1)
-                return int.MinValue;
+                return byte.MinValue;
             else if (nodeRingIds.Length < 2)
-                return 0;
+                return 128;
 
             Array.Sort(nodeRingIds);
             var lastIdx = nodeRingIds.Length - 1;
             var maxDistance = Tuple.Create(nodeRingIds[0], nodeRingIds[lastIdx], Math.Abs(nodeRingIds[0] - nodeRingIds[lastIdx]));
             for (int i = 1; i < nodeRingIds.Length; i++)
             {
-                int distance = Math.Abs(nodeRingIds[i] - nodeRingIds[i - 1]);
+                long distance = Math.Abs(nodeRingIds[i] - nodeRingIds[i - 1]);
                 if (distance > maxDistance.Item3)
                     maxDistance = Tuple.Create(nodeRingIds[i], nodeRingIds[i - 1], distance);
             }
 
-            return maxDistance.Item2 + (maxDistance.Item3 / 2);
+            return unchecked((byte)(maxDistance.Item2 + (maxDistance.Item3 / 2)));
         }
     }
 }
