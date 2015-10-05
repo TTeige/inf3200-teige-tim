@@ -1,2 +1,3 @@
-# A directory for your source code
-Put your codes in here.
+# Source Code directory
+
+Handin code contained within the `impl` subfolder
