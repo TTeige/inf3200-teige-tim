@@ -1,2 +1,3 @@
-# A directory for your report
-Put your report in this directory
+# Handin Report
+
+Contains Report for Handin by Tim Alexander Teige, Fredrik Høisæther Rasch

@@ -117,7 +117,7 @@ namespace UiT.Inf3200.FrontendServer
             bool foundNodeUri;
             Uri nodeUri;
 
-            Console.WriteLine("FRONTEND: [{0}] Determining storage node for key {1} (Hash code: {2})", httpReqId, key, key.GetHashCode());
+            Console.WriteLine("FRONTEND: [{0}] Determining storage node for key {1} (Hash code: {2})", httpReqId, key, (byte)(key.GetHashCode() % byte.MaxValue));
             do
             {
                 nodeUri = FindStorageNode((byte)(key.GetHashCode() % byte.MaxValue), out foundNodeUri);
@@ -158,7 +158,7 @@ namespace UiT.Inf3200.FrontendServer
             var key = httpCtx.Request.Url.LocalPath;
             bool foundNodeUri;
             Uri nodeUri;
-            Console.WriteLine("FRONTEND: [{0}] Determining storage node for key {1} (Hash code: {2})", httpReqId, key, key.GetHashCode());
+            Console.WriteLine("FRONTEND: [{0}] Determining storage node for key {1} (Hash code: {2})", httpReqId, key, (byte)(key.GetHashCode() % byte.MaxValue));
             do
             {
                 nodeUri = FindStorageNode((byte)(key.GetHashCode() % byte.MaxValue), out foundNodeUri);

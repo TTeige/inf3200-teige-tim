@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2013
-VisualStudioVersion = 12.0.21005.1
+# Visual Studio 14
+VisualStudioVersion = 14.0.23107.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "THNETII.Basic", "src\impl\TH-NETII\Basic\THNETII.Basic.csproj", "{41EBD80C-7E60-4D7F-A15B-FC501E114C4C}"
 EndProject
@@ -9,7 +9,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UiT.Inf3200.FrontendServer"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UiT.Inf3200.StorageNodeServer", "src\impl\UiT.Inf3200\StorageNodeServer\UiT.Inf3200.StorageNodeServer.csproj", "{EA33F0E4-2511-4096-AF71-D41FB81E3A93}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DistributedVisualization", "DistributedVisualization\DistributedVisualization.csproj", "{95132365-0671-4994-ABC9-A07F0DA53525}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UiT.Inf3200.DistributedVisualization", "src\impl\UiT.Inf3200\DistributedVisualization\UiT.Inf3200.DistributedVisualization.csproj", "{95132365-0671-4994-ABC9-A07F0DA53525}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

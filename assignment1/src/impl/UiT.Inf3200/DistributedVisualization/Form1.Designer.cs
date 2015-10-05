@@ -1,4 +1,4 @@
-﻿namespace DistributedVisualization
+﻿namespace UiT.Inf3200.DistributedVisualization
 {
     partial class Form1
     {

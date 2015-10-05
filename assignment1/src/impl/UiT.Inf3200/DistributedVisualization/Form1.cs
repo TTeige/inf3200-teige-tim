@@ -1,18 +1,13 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
 using System.Data;
-using System.Drawing;
 using System.Linq;
 using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Xml.Serialization;
-using UiT.Inf3200;
-using UiT.Inf3200.StorageNodeServer;
 
-namespace DistributedVisualization
+namespace UiT.Inf3200.DistributedVisualization
 {
     public partial class Form1 : Form
     {
@@ -43,8 +38,8 @@ namespace DistributedVisualization
 
                     using (var resp = req.GetResponse())
                     {
-                        var kvpsSerializer = new XmlSerializer(typeof(KeyValuePair));
-                        var tmpKvps = kvpsSerializer.Deserialize(resp.GetResponseStream()) as KeyValuePair[];
+                        var kvpsSerializer = new XmlSerializer(typeof(SerializableKeyValuePair));
+                        var tmpKvps = kvpsSerializer.Deserialize(resp.GetResponseStream()) as SerializableKeyValuePair[];
                         foreach (var kvp in tmpKvps)
                         {
                             allData.Add(new Tuple<int, string, byte[]>(node.RingId, kvp.Key, kvp.Value));
