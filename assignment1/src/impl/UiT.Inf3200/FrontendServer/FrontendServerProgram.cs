@@ -88,7 +88,7 @@ namespace UiT.Inf3200.FrontendServer
             if (nodeRing.IsEmpty)
                 ringNodeArray = new RingNode[0];
             else
-                ringNodeArray = nodeRing.Select(kvp => new RingNode { RingId = kvp.Key, NodeGuid = kvp.Value, NodeUri = storageNodes[kvp.Value].ToString() }).ToArray();
+                ringNodeArray = nodeRing.ToArray().Select(kvp => new RingNode { RingId = kvp.Key, NodeGuid = kvp.Value, NodeUri = storageNodes[kvp.Value].ToString() }).ToArray();
             var ringNodeSerializer = new XmlSerializer(ringNodeArray.GetType(), new XmlRootAttribute { ElementName = "Ring" });
 
             httpCtx.Response.StatusCode = (int)HttpStatusCode.OK;
@@ -186,13 +186,7 @@ namespace UiT.Inf3200.FrontendServer
 
         private static Uri FindStorageNode(int hashCode, out bool success)
         {
-            if (nodeRing.IsEmpty)
-            {
-                success = false;
-                return null;
-            }
-
-            var keys = nodeRing.Select(kvp => kvp.Key).ToArray();
+            var keys = nodeRing.ToArray().Select(kvp => kvp.Key).ToArray();
             Array.Sort(keys);
             var nodeInfo = StorageNodeFinder.FindStorageNode(keys, hashCode, nodeRing, storageNodes, out success);
             if (nodeInfo == null)
@@ -243,8 +237,8 @@ namespace UiT.Inf3200.FrontendServer
             httpCtx.Response.Close(clientId.ToByteArray(), willBlock: true);
             Console.WriteLine("FRONTEND: [{0}] Assigned GUID to storage node: {1}", httpReqId, clientId);
 
-            var ringNodeArray = nodeRing.Select(kvp => new RingNode { RingId = kvp.Key, NodeGuid = kvp.Value, NodeUri = storageNodes[kvp.Value].ToString() }).ToArray();
-            var redistributeClients = storageNodes.Where(kvp => kvp.Key != clientId).ToArray();
+            var ringNodeArray = nodeRing.ToArray().Select(kvp => new RingNode { RingId = kvp.Key, NodeGuid = kvp.Value, NodeUri = storageNodes[kvp.Value].ToString() }).ToArray();
+            var redistributeClients = storageNodes.ToArray().Where(kvp => kvp.Key != clientId).ToArray();
 
             var ringNodeSerializer = new XmlSerializer(ringNodeArray.GetType(), new XmlRootAttribute { ElementName = "Ring" });
 
@@ -323,7 +317,7 @@ namespace UiT.Inf3200.FrontendServer
 
         private static int FindNewRingId()
         {
-            var nodeRingIds = nodeRing.Keys.ToArray();
+            var nodeRingIds = nodeRing.ToArray().Select(kvp => kvp.Key).ToArray();
             if (nodeRingIds.Length < 1)
                 return int.MinValue;
             else if (nodeRingIds.Length < 2)
