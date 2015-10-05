@@ -137,20 +137,43 @@ namespace UiT.Inf3200.FrontendServer
                 var srcReqId = (uint)paramArray[1];
                 var req = paramArray[2] as WebRequest;
 
-                using (var resp = req.EndGetResponse(ar))
+                try
                 {
-                    Console.WriteLine("FRONTEND: [{0}] Got response from storage node, transmittid key value to client . . .", srcReqId, nodeUri);
-
-                    ctx.Response.StatusCode = (int)HttpStatusCode.OK;
-                    ctx.Response.ContentLength64 = resp.ContentLength;
-                    ctx.Response.ContentType = resp.ContentType;
-
-                    using (var targetStream = ctx.Response.OutputStream)
+                    using (var resp = req.EndGetResponse(ar))
                     {
-                        using (var respStream = resp.GetResponseStream())
-                            respStream.CopyTo(targetStream);
-                        targetStream.Flush();
+                        Console.WriteLine("FRONTEND: [{0}] Got response from storage node, transmittid key value to client . . .", srcReqId, nodeUri);
+
+                        ctx.Response.StatusCode = (int)HttpStatusCode.OK;
+                        ctx.Response.ContentLength64 = resp.ContentLength;
+                        ctx.Response.ContentType = resp.ContentType;
+
+                        using (var targetStream = ctx.Response.OutputStream)
+                        {
+                            using (var respStream = resp.GetResponseStream())
+                                respStream.CopyTo(targetStream);
+                            targetStream.Flush();
+                        }
                     }
+                }
+                catch (WebException webExcept)
+                {
+                    var sc = HttpStatusCode.InternalServerError;
+                    switch (webExcept.Status)
+                    {
+                        case WebExceptionStatus.Success:
+                            sc = HttpStatusCode.OK;
+                            break;
+                        case WebExceptionStatus.Timeout:
+                            sc = HttpStatusCode.GatewayTimeout;
+                            break;
+                        case WebExceptionStatus.MessageLengthLimitExceeded:
+                            sc = HttpStatusCode.RequestEntityTooLarge;
+                            break;
+                        default:
+                            break;
+                    }
+                    ctx.Response.StatusCode = (int)sc;
+                    ctx.Response.Close(new byte[0], willBlock: false);
                 }
             }, new object[] { httpCtx, httpReqId, request });
         }
