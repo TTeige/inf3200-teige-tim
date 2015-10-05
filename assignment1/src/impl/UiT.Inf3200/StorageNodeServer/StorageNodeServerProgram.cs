@@ -36,16 +36,23 @@ namespace UiT.Inf3200.StorageNodeServer
 
                 Console.WriteLine("STORAGE : Logging on Storage node on Frontend ({0}) . . .", frontendUri);
 
-                var logonRequest = WebRequest.Create(new Uri(frontendUri, "logon"));
-                logonRequest.Method = "MANAGE";
-                using (var logonResponse = logonRequest.GetResponse())
+                try
                 {
-                    Console.WriteLine("STORAGE : Storage node logged on Frontend ({0})", frontendUri);
-                    using (var memStream = new MemoryStream((int)logonResponse.ContentLength))
+                    var logonRequest = WebRequest.Create(new Uri(frontendUri, "logon"));
+                    logonRequest.Method = "MANAGE";
+                    using (var logonResponse = logonRequest.GetResponse())
                     {
-                        logonResponse.GetResponseStream().CopyTo(memStream);
-                        nodeGuid = new Guid(memStream.ToArray());
+                        Console.WriteLine("STORAGE : Storage node logged on Frontend ({0})", frontendUri);
+                        using (var memStream = new MemoryStream((int)logonResponse.ContentLength))
+                        {
+                            logonResponse.GetResponseStream().CopyTo(memStream);
+                            nodeGuid = new Guid(memStream.ToArray());
+                        }
                     }
+                }
+                catch (WebException)
+                {
+                    return;
                 }
 
                 Console.WriteLine("STORAGE : Assigned node GUID: {0}", nodeGuid);
@@ -108,14 +115,14 @@ namespace UiT.Inf3200.StorageNodeServer
 
         private static void HandleDiagnostics(HttpListenerContext httpCtx)
         {
-            KeyValuePair[] serializeableKvps;
+            SerializableKeyValuePair[] serializeableKvps;
             if (!kvps.IsEmpty)
             {
-                serializeableKvps = kvps.Select(kvp => new KeyValuePair { Key = kvp.Key, Value = kvp.Value }).ToArray();
+                serializeableKvps = kvps.Select(kvp => new SerializableKeyValuePair { Key = kvp.Key, Value = kvp.Value }).ToArray();
             }
             else
             {
-                serializeableKvps = new KeyValuePair[0];
+                serializeableKvps = new SerializableKeyValuePair[0];
             }
 
             var serializer = new XmlSerializer(serializeableKvps.GetType(), new XmlRootAttribute { ElementName = "KeyValuePairs" });
@@ -157,7 +164,7 @@ namespace UiT.Inf3200.StorageNodeServer
                 bool storageNodeFound;
                 Tuple<Guid, Uri> targetNodeInfo;
                 targetNodeInfo = StorageNodeFinder.FindStorageNode(nodeRingKeys,
-                    kvp.Key.GetHashCode(), nodeRingGuidDict, storageNodeDict, out storageNodeFound);
+                    (byte)(kvp.Key.GetHashCode() % byte.MaxValue), nodeRingGuidDict, storageNodeDict, out storageNodeFound);
                 if (!storageNodeFound)
                     continue;
 
@@ -202,18 +209,27 @@ namespace UiT.Inf3200.StorageNodeServer
             var beginLogoffRequest = WebRequest.Create(new Uri(frontendUri, "beginlogoff?nodeid=" + Uri.EscapeUriString(nodeGuid.ToString())));
             beginLogoffRequest.Method = "MANAGE";
             Guid logoffGuid;
-            using (var beginLogoffResponse = beginLogoffRequest.GetResponse())
+            try
             {
-                using (var memStream = new MemoryStream((int)beginLogoffResponse.ContentLength))
+                using (var beginLogoffResponse = beginLogoffRequest.GetResponse())
                 {
-                    beginLogoffResponse.GetResponseStream().CopyTo(memStream);
-                    logoffGuid = new Guid(memStream.ToArray());
+                    using (var memStream = new MemoryStream((int)beginLogoffResponse.ContentLength))
+                    {
+                        beginLogoffResponse.GetResponseStream().CopyTo(memStream);
+                        logoffGuid = new Guid(memStream.ToArray());
+                    }
                 }
             }
-
-            httpCtx.Response.StatusCode = (int)HttpStatusCode.OK;
-            httpCtx.Response.Close(new byte[0], willBlock: true);
-            httpListener.Stop();
+            catch (WebException)
+            {
+                return;
+            }
+            finally
+            {
+                httpCtx.Response.StatusCode = (int)HttpStatusCode.OK;
+                httpCtx.Response.Close(new byte[0], willBlock: true);
+                httpListener.Stop();
+            }
 
             var frontendClient = new WebClient() { BaseAddress = frontendUri.ToString() };
 
@@ -227,9 +243,15 @@ namespace UiT.Inf3200.StorageNodeServer
                 }
             }
 
-            var LogoffCompleteRequest = WebRequest.Create(new Uri(frontendUri, "logoffcomplete?logoffId=" + Uri.EscapeUriString(logoffGuid.ToString())));
-            beginLogoffRequest.Method = "MANAGE";
-            using (var logoffCompleteReponse = LogoffCompleteRequest.GetResponse()) { }
+            try
+            {
+                var logoffCompleteRequest = WebRequest.Create(new Uri(frontendUri, "logoffcomplete?logoffId=" + Uri.EscapeUriString(logoffGuid.ToString())));
+                logoffCompleteRequest.Method = "MANAGE";
+                using (var logoffCompleteReponse = logoffCompleteRequest.GetResponse()) { }
+            }
+            catch (WebException)
+            {
+            }
         }
 
         private static void HandleKvpGet(HttpListenerContext httpCtx)

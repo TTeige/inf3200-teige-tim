@@ -25,7 +25,7 @@ namespace UiT.Inf3200.FrontendServer
             AssemblySplash.WriteAssemblySplash();
             Console.WriteLine();
 
-            httpListener.Prefixes.Add("http://+:8181/");
+            httpListener.Prefixes.Add(string.Format("http://+:{0}/", args == null || args.Length < 1 ? "8181" : args[0]));
 
             httpListener.Start();
 
@@ -88,7 +88,7 @@ namespace UiT.Inf3200.FrontendServer
             if (nodeRing.IsEmpty)
                 ringNodeArray = new RingNode[0];
             else
-                ringNodeArray = nodeRing.Select(kvp => new RingNode { RingId = kvp.Key, NodeGuid = kvp.Value, NodeUri = storageNodes[kvp.Value].ToString() }).ToArray();
+                ringNodeArray = nodeRing.ToArray().Select(kvp => new RingNode { RingId = kvp.Key, NodeGuid = kvp.Value, NodeUri = storageNodes[kvp.Value].ToString() }).ToArray();
             var ringNodeSerializer = new XmlSerializer(ringNodeArray.GetType(), new XmlRootAttribute { ElementName = "Ring" });
 
             httpCtx.Response.StatusCode = (int)HttpStatusCode.OK;
@@ -115,7 +115,7 @@ namespace UiT.Inf3200.FrontendServer
             Console.WriteLine("FRONTEND: [{0}] Determining storage node for key {1} (Hash code: {2})", httpReqId, key, key.GetHashCode());
             do
             {
-                nodeUri = FindStorageNode(key.GetHashCode(), out foundNodeUri);
+                nodeUri = FindStorageNode((byte)(key.GetHashCode() % byte.MaxValue), out foundNodeUri);
             } while (!foundNodeUri);
 
             Console.WriteLine("FRONTEND: [{0}] Requesting key from storage node at {1}", httpReqId, nodeUri);
@@ -156,7 +156,7 @@ namespace UiT.Inf3200.FrontendServer
             Console.WriteLine("FRONTEND: [{0}] Determining storage node for key {1} (Hash code: {2})", httpReqId, key, key.GetHashCode());
             do
             {
-                nodeUri = FindStorageNode(key.GetHashCode(), out foundNodeUri);
+                nodeUri = FindStorageNode((byte)(key.GetHashCode() % byte.MaxValue), out foundNodeUri);
             } while (!foundNodeUri);
 
             Console.WriteLine("FRONTEND: [{0}] Sending key value to storage node at {1}", httpReqId, nodeUri);
@@ -186,13 +186,7 @@ namespace UiT.Inf3200.FrontendServer
 
         private static Uri FindStorageNode(int hashCode, out bool success)
         {
-            if (nodeRing.IsEmpty)
-            {
-                success = false;
-                return null;
-            }
-
-            var keys = nodeRing.Select(kvp => kvp.Key).ToArray();
+            var keys = nodeRing.ToArray().Select(kvp => kvp.Key).ToArray();
             Array.Sort(keys);
             var nodeInfo = StorageNodeFinder.FindStorageNode(keys, hashCode, nodeRing, storageNodes, out success);
             if (nodeInfo == null)
@@ -235,16 +229,26 @@ namespace UiT.Inf3200.FrontendServer
             value.Host = httpCtx.Request.RemoteEndPoint.Address.ToString();
             value.Port = 8181;
 
+            var ringId = FindNewRingId();
+
             storageNodes[clientId] = value.Uri;
-            nodeRing[FindNewRingId()] = clientId;
+            var ringWasEmpty = nodeRing.IsEmpty;
+            nodeRing[ringId] = clientId;
 
             httpCtx.Response.StatusCode = (int)HttpStatusCode.OK;
             httpCtx.Response.ContentType = MediaTypeNames.Application.Octet;
             httpCtx.Response.Close(clientId.ToByteArray(), willBlock: true);
             Console.WriteLine("FRONTEND: [{0}] Assigned GUID to storage node: {1}", httpReqId, clientId);
 
-            var ringNodeArray = nodeRing.Select(kvp => new RingNode { RingId = kvp.Key, NodeGuid = kvp.Value, NodeUri = storageNodes[kvp.Value].ToString() }).ToArray();
-            var redistributeClients = storageNodes.Where(kvp => kvp.Key != clientId).ToArray();
+            if (ringWasEmpty)
+                return;
+
+            var nodeRingOrdered = nodeRing.ToArray().OrderBy(kvp => kvp.Key);
+            var ringNodeArray = nodeRingOrdered.Select(kvp => new RingNode { RingId = kvp.Key, NodeGuid = kvp.Value, NodeUri = storageNodes[kvp.Value].ToString() }).ToArray();
+            
+            var redistributeClient = nodeRingOrdered.SkipWhile(kvp => kvp.Key <= ringId);
+
+            var redistClient = redistributeClient.Any() ? redistributeClient.First() : nodeRingOrdered.First();
 
             var ringNodeSerializer = new XmlSerializer(ringNodeArray.GetType(), new XmlRootAttribute { ElementName = "Ring" });
 
@@ -256,10 +260,11 @@ namespace UiT.Inf3200.FrontendServer
                 ringNodeDataBytes = ringNodeMemoryStream.ToArray();
             }
 
-            foreach (var redistClient in redistributeClients)
+            Uri redistributeUri;
+            if (storageNodes.TryGetValue(redistClient.Value, out redistributeUri))
             {
-                Console.WriteLine("FRONTEND: [{0}] Sending REDISTRIBUTE command to storage node {1} at {2}", httpReqId, redistClient.Key, redistClient.Value);
-                var redistRequest = WebRequest.Create(redistClient.Value);
+                Console.WriteLine("FRONTEND: [{0}] Sending REDISTRIBUTE command to storage node at {1}", httpReqId, redistributeUri);
+                var redistRequest = WebRequest.Create(redistributeUri);
                 redistRequest.Method = "REDISTRIBUTE";
                 redistRequest.ContentType = MediaTypeNames.Text.Xml;
                 redistRequest.ContentLength = ringNodeDataBytes.LongLength;
@@ -287,6 +292,9 @@ namespace UiT.Inf3200.FrontendServer
             var nodeId = Guid.Parse(httpCtx.Request.QueryString["nodeid"]);
             Console.WriteLine("FRONTEND: [{0}] Handling Storage node logoff initiate from {1} at {2}", httpReqId, nodeId, httpCtx.Request.RemoteEndPoint);
             Uri nodeUri;
+            Guid ignoreGuid;
+            foreach (var ringId in nodeRing.ToArray().Where(kvp => kvp.Value == nodeId).Select(kvp => kvp.Key))
+                nodeRing.TryRemove(ringId, out ignoreGuid);
             if (storageNodes.TryRemove(nodeId, out nodeUri))
             {
                 var logoffId = Guid.NewGuid();
@@ -323,23 +331,23 @@ namespace UiT.Inf3200.FrontendServer
 
         private static int FindNewRingId()
         {
-            var nodeRingIds = nodeRing.Keys.ToArray();
+            var nodeRingIds = nodeRing.ToArray().Select(kvp => (long)kvp.Key).ToArray();
             if (nodeRingIds.Length < 1)
-                return int.MinValue;
+                return byte.MinValue;
             else if (nodeRingIds.Length < 2)
-                return 0;
+                return 128;
 
             Array.Sort(nodeRingIds);
             var lastIdx = nodeRingIds.Length - 1;
             var maxDistance = Tuple.Create(nodeRingIds[0], nodeRingIds[lastIdx], Math.Abs(nodeRingIds[0] - nodeRingIds[lastIdx]));
             for (int i = 1; i < nodeRingIds.Length; i++)
             {
-                int distance = Math.Abs(nodeRingIds[i] - nodeRingIds[i - 1]);
+                long distance = Math.Abs(nodeRingIds[i] - nodeRingIds[i - 1]);
                 if (distance > maxDistance.Item3)
                     maxDistance = Tuple.Create(nodeRingIds[i], nodeRingIds[i - 1], distance);
             }
 
-            return maxDistance.Item2 + (maxDistance.Item3 / 2);
+            return unchecked((byte)(maxDistance.Item2 + (maxDistance.Item3 / 2)));
         }
     }
 }
