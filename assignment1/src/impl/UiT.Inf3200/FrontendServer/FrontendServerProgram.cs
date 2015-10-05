@@ -336,23 +336,22 @@ namespace UiT.Inf3200.FrontendServer
 
         private static int FindNewRingId()
         {
-            var nodeRingIds = nodeRing.ToArray().Select(kvp => (long)kvp.Key).ToArray();
+            var nodeRingIds = nodeRing.ToArray().OrderBy(kvp => kvp.Key).Select(kvp => kvp.Key).ToArray();
             if (nodeRingIds.Length < 1)
                 return byte.MinValue;
             else if (nodeRingIds.Length < 2)
                 return 128;
 
-            Array.Sort(nodeRingIds);
             var lastIdx = nodeRingIds.Length - 1;
-            var maxDistance = Tuple.Create(nodeRingIds[0], nodeRingIds[lastIdx], Math.Abs(nodeRingIds[0] - nodeRingIds[lastIdx]));
+            var maxDistance = Tuple.Create(nodeRingIds[0], nodeRingIds[lastIdx], Math.Abs((nodeRingIds[0] + 256) - nodeRingIds[lastIdx]));
             for (int i = 1; i < nodeRingIds.Length; i++)
             {
-                long distance = Math.Abs(nodeRingIds[i] - nodeRingIds[i - 1]);
+                int distance = Math.Abs(nodeRingIds[i] - nodeRingIds[i - 1]);
                 if (distance > maxDistance.Item3)
                     maxDistance = Tuple.Create(nodeRingIds[i], nodeRingIds[i - 1], distance);
             }
 
-            return unchecked((byte)(maxDistance.Item2 + (maxDistance.Item3 / 2)));
+            return maxDistance.Item2 + (maxDistance.Item3 / 2);
         }
     }
 }
