@@ -14,6 +14,8 @@ namespace UiT.Inf3200.FrontendServer
 {
     class FrontendServerProgram
     {
+        private static readonly object managementLockObj = new object();
+
         private static HttpListener httpListener = new HttpListener();
 
         private static ConcurrentDictionary<Guid, Uri> storageNodes = new ConcurrentDictionary<Guid, Uri>();
@@ -65,7 +67,10 @@ namespace UiT.Inf3200.FrontendServer
             }
             else if (string.Equals(httpMethod, "MANAGE", StringComparison.InvariantCultureIgnoreCase))
             {
-                HandleMngCtx(httpCtx, (uint)ar.AsyncState);
+                lock (managementLockObj)
+                {
+                    HandleMngCtx(httpCtx, (uint)ar.AsyncState); 
+                }
             }
             else if (string.Equals(httpMethod, "DIAG", StringComparison.InvariantCultureIgnoreCase))
             {

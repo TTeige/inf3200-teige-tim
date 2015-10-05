@@ -15,6 +15,8 @@ namespace UiT.Inf3200.StorageNodeServer
 {
     static class StorageNodeServerProgram
     {
+        private static readonly object redistLockObj = new object();
+
         private static ManualResetEvent terminateEvent = new ManualResetEvent(initialState: false);
         private static HttpListener httpListener = new HttpListener();
         private static Guid nodeGuid;
@@ -100,7 +102,10 @@ namespace UiT.Inf3200.StorageNodeServer
             }
             else if (string.Equals(httpMethod, "REDISTRIBUTE", StringComparison.InvariantCultureIgnoreCase))
             {
-                HandleRedistribute(httpCtx);
+                lock (redistLockObj)
+                {
+                    HandleRedistribute(httpCtx); 
+                }
             }
             else if (string.Equals(httpMethod, "DIAG", StringComparison.InvariantCultureIgnoreCase))
             {
