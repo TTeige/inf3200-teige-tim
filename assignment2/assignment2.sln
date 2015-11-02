@@ -5,6 +5,7 @@ VisualStudioVersion = 14.0.23107.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "settings", "settings", "{D971AF41-83EC-4D4C-A136-273F492C79F9}"
 	ProjectSection(SolutionItems) = preProject
+		global.json = global.json
 		src\nuget.Config = src\nuget.Config
 	EndProjectSection
 EndProject
