@@ -8,13 +8,17 @@ using Microsoft.Dnx.Runtime;
 using Microsoft.Framework.Configuration;
 using Microsoft.Framework.DependencyInjection;
 using Microsoft.Framework.Logging;
+using Microsoft.AspNet.Diagnostics;
 
-namespace no.uit.inf3200_2015_2.assignment2.fra006_tte008.FrontendApp
+namespace UiT.Inf3200.FrontendApp
 {
     public class Startup
     {
         public Startup(IHostingEnvironment env, IApplicationEnvironment appEnv)
         {
+            HostingEnvironment = env;
+            ApplicationEnvironment = appEnv;
+
             // Setup configuration sources.
             var builder = new ConfigurationBuilder()
                 .SetBasePath(appEnv.ApplicationBasePath)
@@ -22,6 +26,10 @@ namespace no.uit.inf3200_2015_2.assignment2.fra006_tte008.FrontendApp
                 .AddEnvironmentVariables();
             Configuration = builder.Build();
         }
+
+        public IHostingEnvironment HostingEnvironment { get; }
+
+        public IApplicationEnvironment ApplicationEnvironment { get; }
 
         public IConfigurationRoot Configuration { get; set; }
 
@@ -49,30 +57,17 @@ namespace no.uit.inf3200_2015_2.assignment2.fra006_tte008.FrontendApp
             app.UseIISPlatformHandler();
 
             // Add the following to the request pipeline only in development environment.
-            if (env.IsDevelopment())
-            {
-                app.UseDeveloperExceptionPage();
-            }
-            else
-            {
-                // Add Error handling middleware which catches all application specific errors and
-                // send the request to the following path or controller action.
-                app.UseExceptionHandler("/Home/Error");
-            }
+            app.UseDeveloperExceptionPage();
 
             // Add static files to the request pipeline.
             app.UseStaticFiles();
 
             // Add MVC to the request pipeline.
-            app.UseMvc(routes =>
-            {
-                routes.MapRoute(
-                    name: "default",
-                    template: "{controller=Home}/{action=Index}/{id?}");
+            app.UseMvcWithDefaultRoute();
 
-                // Uncomment the following line to add a route for porting Web API 2 controllers.
-                // routes.MapWebApiRoute("DefaultApi", "api/{controller}/{id?}");
-            });
+            app.UseWelcomePage("/Welcome");
+
+            app.UseRuntimeInfoPage("/RuntimeInfo");
         }
     }
 }

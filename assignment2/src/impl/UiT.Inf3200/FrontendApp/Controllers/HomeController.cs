@@ -4,7 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNet.Mvc;
 
-namespace no.uit.inf3200_2015_2.assignment2.fra006_tte008.FrontendApp.Controllers
+namespace UiT.Inf3200.FrontendApp.Controllers
 {
     public class HomeController : Controller
     {
@@ -29,7 +29,7 @@ namespace no.uit.inf3200_2015_2.assignment2.fra006_tte008.FrontendApp.Controller
 
         public IActionResult Error()
         {
-            return View("~/Views/Shared/Error.cshtml");
+            throw new Exception("This is the developer exception page.");
         }
     }
 }

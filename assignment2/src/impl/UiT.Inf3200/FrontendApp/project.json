@@ -19,7 +19,7 @@
 		"Microsoft.Framework.Logging.Debug": "1.0.0-beta8"
 	},
 	"commands": {
-		"web": "Microsoft.AspNet.Hosting --server Microsoft.AspNet.Server.WebListener --server.urls http://localhost:5001",
+        "web": "Microsoft.AspNet.Server.Kestrel",
 		"web-any": "Microsoft.AspNet.Hosting --server Microsoft.AspNet.Server.WebListener --server.urls http://*:5001",
 		"kestrel": "Microsoft.AspNet.Hosting --server Microsoft.AspNet.Server.Kestrel --server.urls http://*:5004"
 	},
