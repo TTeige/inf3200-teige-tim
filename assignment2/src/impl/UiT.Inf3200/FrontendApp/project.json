@@ -21,6 +21,7 @@
 
 	"commands": {
 		"web": "Microsoft.AspNet.Hosting --server Microsoft.AspNet.Server.WebListener --server.urls http://localhost:5001",
+		"web-any": "Microsoft.AspNet.Hosting --server Microsoft.AspNet.Server.WebListener --server.urls http://*:5001",
 		"kestrel": "Microsoft.AspNet.Hosting --server Microsoft.AspNet.Server.Kestrel --server.urls http://*:5004"
 	},
 
