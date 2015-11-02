@@ -1,13 +1,11 @@
 {
-	"version": "1.0.0",
-	"name": "no.uit.inf3200.3.tte008-fra006.FrontendApp",
-	"repository": { "url": "https://github.com/couven92/uit-inf-3200-2015.2-fra006-tte008.git" },
-	"private": true,
-	"devDependencies": {
-		"gulp": "^3.9.0",
-		"gulp-concat": "^2.6.0",
-		"gulp-cssmin": "^0.1.7",
-		"gulp-uglify": "^1.4.2",
-		"rimraf": "^2.4.3"
-	}
+  "name": "no.uit.inf3200_2015_2.assignment2.fra006_tte008.FrontendApp",
+  "version": "0.0.0",
+  "devDependencies": {
+    "gulp": "3.8.11",
+    "gulp-concat": "2.5.2",
+    "gulp-cssmin": "0.1.7",
+    "gulp-uglify": "1.2.0",
+    "rimraf": "2.2.8"
+  }
 }
