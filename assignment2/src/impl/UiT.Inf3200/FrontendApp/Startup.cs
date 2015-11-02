@@ -31,8 +31,6 @@ namespace UiT.Inf3200.FrontendApp
 
             // Add MVC to the request pipeline.
             app.UseMvcWithDefaultRoute();
-
-            app.UseWelcomePage();
         }
     }
 }
