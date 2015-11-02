@@ -1,7 +1,11 @@
 {
 	"version": "1.0.0",
 	"name": "no.uit.inf3200.3.tte008-fra006.FrontendApp",
-	"repository": { "url": "https://github.com/couven92/uit-inf-3200-2015.2-fra006-tte008.git" },
+	"description": "UiT Inf-3200 Assignment 3 FrontendApp",
+	"author": "Tim Alexander Teige, Fredrik Høisæther Rasch",
+	"repository": {
+		"url": "https://github.com/couven92/uit-inf-3200-2015.2-fra006-tte008.git"
+	},
 	"private": true,
 	"devDependencies": {
 		"gulp": "^3.9.0",
