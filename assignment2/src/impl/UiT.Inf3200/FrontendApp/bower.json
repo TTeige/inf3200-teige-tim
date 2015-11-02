@@ -1,0 +1,12 @@
+{
+	"name": "UiT Inf-3200 Assignment 3 FrontendApp",
+	"authors": [ "Tim Alexander Teige", "Fredrik Høisæther Rasch" ],
+	"repository": { "url": "https://github.com/couven92/uit-inf-3200-2015.2-fra006-tte008.git" },
+	"private": true,
+	"dependencies": {
+		"bootstrap": "^3.3.5",
+		"jquery": "^2.1.4",
+		"jquery-validation": "^1.14.0",
+		"jquery-validation-unobtrusive": "^3.2.4"
+	}
+}
