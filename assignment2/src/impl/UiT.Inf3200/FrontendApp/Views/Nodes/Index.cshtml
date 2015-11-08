@@ -12,9 +12,6 @@
 
 <h2>@ViewData["Title"]</h2>
 
-<div class="btn-group" role="group">
-</div>
-
 <hr />
 
 @if (Model.Any())
@@ -24,8 +21,8 @@
 		{
 			var dnsHostEntry = Dns.GetHostEntry(nodeTuple.Item1);
 			var hostname = nodeTuple.Item1;
-			if (dnsHostEntry.Aliases != null && dnsHostEntry.Aliases.Length > 0)
-			{ hostname = dnsHostEntry.Aliases[0]; }
+			if (dnsHostEntry != null)
+			{ hostname = dnsHostEntry.HostName; }
 
 			<a class="list-group-item" asp-controller="Nodes" asp-action="Details" asp-route-hostname="@nodeTuple.Item1" asp-route-port="@nodeTuple.Item2">
 				@hostname

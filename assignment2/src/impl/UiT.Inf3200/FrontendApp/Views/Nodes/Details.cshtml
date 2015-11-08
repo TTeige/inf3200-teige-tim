@@ -11,8 +11,8 @@
 
 	var dnsHostEntry = Dns.GetHostEntry(Model.Item1);
 	var hostname = Model.Item1;
-	if (dnsHostEntry.Aliases != null && dnsHostEntry.Aliases.Length > 0)
-	{ hostname = dnsHostEntry.Aliases[0]; }
+	if (dnsHostEntry != null)
+	{ hostname = dnsHostEntry.HostName; }
 
 	IEnumerable<Tuple<string, int>> nodeConnections = ViewBag.NodeConnections ?? Enumerable.Empty<Tuple<string, int>>();
 }
@@ -58,10 +58,9 @@
 	<div class="list-group">
 		@foreach (var nodeTuple in nodeConnections)
 		{
+			
 			var cdnsHostEntry = Dns.GetHostEntry(nodeTuple.Item1);
-			var chostname = nodeTuple.Item1;
-			if (dnsHostEntry.Aliases != null && dnsHostEntry.Aliases.Length > 0)
-			{ chostname = dnsHostEntry.Aliases[0]; }
+			var chostname = cdnsHostEntry != null ? cdnsHostEntry.HostName : nodeTuple.Item1;
 
 			<a class="list-group-item" asp-controller="Nodes" asp-action="Details" asp-route-hostname="@nodeTuple.Item1" asp-route-port="@nodeTuple.Item2">
 				@chostname

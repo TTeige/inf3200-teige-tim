@@ -25,7 +25,21 @@ namespace UiT.Inf3200.FrontendApp.Controllers
 
         public IActionResult Details(string hostname, int port)
         {
-            Tuple<string, int> nodeTuple = Nodes.ToArray().FirstOrDefault(t => string.Equals(hostname, t.Item1, StringComparison.OrdinalIgnoreCase) && t.Item2 == port);
+            var dnsHostEntry = Dns.GetHostEntry(hostname);
+            var dnsHostname = dnsHostEntry != null ? dnsHostEntry.HostName : hostname;
+
+            Tuple<string, int> nodeTuple = Nodes.ToArray().FirstOrDefault(t =>
+            {
+                var hostnameMatch = string.Equals(hostname, t.Item1, StringComparison.OrdinalIgnoreCase);
+                if (!hostnameMatch)
+                {
+                    var tDnsHostEntry = Dns.GetHostEntry(t.Item1);
+                    var tDnsHostname = tDnsHostEntry != null ? tDnsHostEntry.HostName : t.Item1;
+                    hostnameMatch = string.Equals(tDnsHostname, dnsHostname, StringComparison.OrdinalIgnoreCase);
+                }
+                return hostnameMatch && t.Item2 == port;
+            });
+
             if (nodeTuple == null)
                 return HttpNotFound();
             var nodeUriBuilder = new UriBuilder(Uri.UriSchemeHttp, nodeTuple.Item1, nodeTuple.Item2);
