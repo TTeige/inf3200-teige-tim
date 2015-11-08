@@ -70,7 +70,7 @@ namespace UiT.Inf3200.FrontendApp
                     if (j == i)
                         j++;
 
-                    if (otherNodeByte > 200)
+                    if (otherNodeByte > 64)
                         otherConnectedNodes.Add(nodesArray[j]);
 
                     j++;
