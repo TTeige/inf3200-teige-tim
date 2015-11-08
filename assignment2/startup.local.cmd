@@ -1,0 +1,13 @@
+@ECHO OFF
+
+SET AVAILABLENODESFILE=src\impl\UiT.Inf3200\FrontendApp\availableNodes
+SET P2PNODEEXE=src\impl\UiT.Inf3200\P2PNode\bin\Debug\P2PNode.exe
+
+ERASE %AVAILABLENODESFILE%
+
+FOR /L %%I IN (8899,1,8920) DO (
+	START "P2PNode.exe (127.0.0.1:%%I)" /B %P2PNODEEXE% %%I > nul 2>&1
+	ECHO 127.0.0.1:%%I>> %AVAILABLENODESFILE%
+)
+
+TASKLIST /FI "IMAGENAME eq P2PNode.exe"
