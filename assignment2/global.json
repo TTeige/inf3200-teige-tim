@@ -1,10 +1,10 @@
 {
     "projects": [
-        "src"
+		"src/impl/UiT.Inf3200/FrontendApp",
+		"src/impl/UiT.Inf3200/P2PNode",
+		"src/impl/THNETII/Basic"
     ],
     "sdk": {
-        "version": "1.0.0-beta8",
-        "runtime": "coreclr",
-        "architecture": "x64"
+        "version": "1.0.0-beta8"
     }
 }
