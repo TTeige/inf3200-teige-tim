@@ -46,26 +46,29 @@ namespace P2PNode
 
             terminateSignal.WaitOne();
 
-            //nodeStateLock.EnterWriteLock();
-            try
+            ClearConnectionsContext();
+
+            http_listener.Stop();
+        }
+
+        private static void ClearConnectionsContext(HttpListenerContext http_ctx = null)
+        {
+            var connectedNodes = outgoingNodeConnections.ToArray().Concat(incomingNodeConnections.ToArray());
+            var deregistrationTaskList = new List<Task>();
+            foreach (var otherNodeKvp in connectedNodes)
             {
-                var connectedNodes = outgoingNodeConnections.ToArray().Concat(incomingNodeConnections.ToArray());
-                var deregistrationTaskList = new List<Task>();
-                foreach (var otherNodeKvp in connectedNodes)
-                {
-                    deregistrationTaskList.Add(DeregisterNodeAtNeighbour(otherNodeKvp.Value.Item1, otherNodeKvp.Value.Item2));
-                }
-
-                Task.WaitAll(deregistrationTaskList.ToArray());
-
-                incomingNodeConnections.Clear();
-                outgoingNodeConnections.Clear();
-
-                http_listener.Stop();
+                deregistrationTaskList.Add(DeregisterNodeAtNeighbour(otherNodeKvp.Value.Item1, otherNodeKvp.Value.Item2));
             }
-            finally
+
+            Task.WaitAll(deregistrationTaskList.ToArray());
+
+            incomingNodeConnections.Clear();
+            outgoingNodeConnections.Clear();
+
+            if (http_ctx != null)
             {
-                //nodeStateLock.ExitWriteLock();
+                http_ctx.Response.StatusCode = (int)HttpStatusCode.OK;
+                http_ctx.Response.Close();
             }
         }
 
@@ -122,6 +125,14 @@ namespace P2PNode
                 {
                     GetNodesContext(http_ctx);
                 }
+                else if (string.Equals("/getNodesWithGuids", path, StringComparison.OrdinalIgnoreCase))
+                {
+                    GetNodesContext(http_ctx, withGuids: true);
+                }
+                else if (string.Equals("/getGuid", path, StringComparison.OrdinalIgnoreCase))
+                {
+                    GetGuidContext(http_ctx);
+                }
                 else if (string.Equals("/connectToNodes", path, StringComparison.OrdinalIgnoreCase))
                 {
                     await ConnectToNodesContext(http_ctx);
@@ -129,6 +140,10 @@ namespace P2PNode
                 else if (string.Equals("/registerNeighbour", path, StringComparison.OrdinalIgnoreCase))
                 {
                     RegisterNeighbourContext(http_ctx);
+                }
+                else if (string.Equals("/clearConnections", path, StringComparison.OrdinalIgnoreCase))
+                {
+                    ClearConnectionsContext(http_ctx);
                 }
                 else if (string.Equals("/deregisterNode", path, StringComparison.OrdinalIgnoreCase))
                 {
@@ -148,7 +163,15 @@ namespace P2PNode
             }
         }
 
-        private static void GetNodesContext(HttpListenerContext http_ctx)
+        private static void GetGuidContext(HttpListenerContext http_ctx)
+        {
+            http_ctx.Response.StatusCode = (int)HttpStatusCode.OK;
+            http_ctx.Response.ContentType = MediaTypeNames.Text.Plain;
+            http_ctx.Response.ContentEncoding = Encoding.ASCII;
+            http_ctx.Response.Close(Encoding.ASCII.GetBytes(nodeGuid.ToString()), willBlock: false);
+        }
+
+        private static void GetNodesContext(HttpListenerContext http_ctx, bool withGuids = false)
         {
             http_ctx.Response.StatusCode = (int)HttpStatusCode.OK;
             http_ctx.Response.ContentType = MediaTypeNames.Text.Plain;
@@ -157,7 +180,10 @@ namespace P2PNode
             {
                 foreach (var connectedNodeKvp in outgoingNodeConnections.ToArray().Concat(incomingNodeConnections.ToArray()))
                 {
-                    respWriter.WriteLine(string.Format("{0}:{1}", connectedNodeKvp.Value.Item1, connectedNodeKvp.Value.Item2));
+                    if (withGuids)
+                        respWriter.WriteLine(string.Format("{0} {1}:{2}", connectedNodeKvp.Key, connectedNodeKvp.Value.Item1, connectedNodeKvp.Value.Item2));
+                    else
+                        respWriter.WriteLine(string.Format("{0}:{1}", connectedNodeKvp.Value.Item1, connectedNodeKvp.Value.Item2));
                 }
                 respWriter.Flush();
             }
