@@ -4,7 +4,8 @@
 
 @using System.Collections.Generic
 @using System.Net;
-@model IReadOnlyList<Tuple<string, int>>
+
+@model IReadOnlyList<NodeModel>
 
 @{
 	ViewData["Title"] = "Available Nodes";
@@ -17,16 +18,21 @@
 @if (Model.Any())
 {
 	<div class="list-group">
-		@foreach (var nodeTuple in Model)
+		@foreach (var node in Model)
 		{
-			var dnsHostEntry = Dns.GetHostEntry(nodeTuple.Item1);
-			var hostname = nodeTuple.Item1;
-			if (dnsHostEntry != null)
-			{ hostname = dnsHostEntry.HostName; }
+			NodeModel[] connectedNodes;
+			try { connectedNodes = node.GetConnectedNodes(); }
+			catch (WebException) { connectedNodes = new NodeModel[0]; }
 
-			<a class="list-group-item" asp-controller="Nodes" asp-action="Details" asp-route-hostname="@nodeTuple.Item1" asp-route-port="@nodeTuple.Item2">
-				@hostname
-				<small>on port @nodeTuple.Item2</small>
+			<a class="list-group-item" asp-controller="Nodes" asp-action="Details" asp-route-guid="@node.Guid">
+				<span class="badge">@node.Guid</span>
+				<h4 class="list-group-item-heading">
+					@node.DnsHostname <small>on port @node.Port</small>
+				</h4>
+				<p class="list-group-item-text">
+					@connectedNodes.Length direct connections.<br />
+					@string.Join(", ", connectedNodes.Select(n => $"{n.Hostname}:{n.Port}"))
+				</p>
 			</a>
 		}
 	</div>

@@ -4,67 +4,58 @@
 
 @using System.Collections.Generic
 @using System.Net;
-@model Tuple<string, int>
+@model NodeModel
 
 @{
-	ViewData["Title"] = $"Node {Model.Item1}:{Model.Item2}";
+	ViewData["Title"] = $"Node {Model.Guid}";
 
-	var dnsHostEntry = Dns.GetHostEntry(Model.Item1);
-	var hostname = Model.Item1;
-	if (dnsHostEntry != null)
-	{ hostname = dnsHostEntry.HostName; }
-
-	IEnumerable<Tuple<string, int>> nodeConnections = ViewBag.NodeConnections ?? Enumerable.Empty<Tuple<string, int>>();
+	NodeModel[] connectedNodes;
+	try { connectedNodes = Model.GetConnectedNodes(); }
+	catch (WebException) { connectedNodes = new NodeModel[0]; }
 }
 
 <h2>
-	Details for node @Model.Item1 <small>on port @Model.Item2</small>
+	Details for node @Model.DnsHostname <small>on port @Model.Port</small>
 </h2>
-
-@if (ViewData.ContainsKey("NodeConnectionError"))
-{
-	<div class="alert alert-danger" role="alert">
-		<strong>Node Connection Error!</strong>
-		@ViewData["NodeConnectionError"]
-	</div> 
-}
-
-<div class="btn-group">
-	<a href="#" class="btn btn-danger">Terminate</a>
-</div>
 
 <hr />
 
 <dl class="dl-horizontal">
-	@if (string.Equals(hostname, Model.Item1, StringComparison.OrdinalIgnoreCase))
+	@if (string.Equals(Model.DnsHostname, Model.Hostname, StringComparison.OrdinalIgnoreCase))
 	{
 		<dt>Hostname</dt>
-		<dd>@hostname</dd>
+		<dd>@Model.Hostname</dd>
 
 	}
 	else
 	{
 		<dt>Hostname (DNS)</dt>
-		<dd>@hostname</dd>
+		<dd>@Model.DnsHostname</dd>
 		<dt>Hostname (Raw)</dt>
-		<dd>@Model.Item1</dd>
+		<dd>@Model.Hostname</dd>
 	}
 	<dt>Port</dt>
-	<dd>@Model.Item2</dd>
+	<dd>@Model.Port</dd>
 </dl>
 
-@if (nodeConnections.Any())
+@if (connectedNodes.Any())
 {
 	<div class="list-group">
-		@foreach (var nodeTuple in nodeConnections)
+		@foreach (var connectedNode in connectedNodes)
 		{
-			
-			var cdnsHostEntry = Dns.GetHostEntry(nodeTuple.Item1);
-			var chostname = cdnsHostEntry != null ? cdnsHostEntry.HostName : nodeTuple.Item1;
+			NodeModel[] subConnectedNodes;
+			try { subConnectedNodes = connectedNode.GetConnectedNodes(); }
+			catch (WebException) { subConnectedNodes = new NodeModel[0]; }
 
-			<a class="list-group-item" asp-controller="Nodes" asp-action="Details" asp-route-hostname="@nodeTuple.Item1" asp-route-port="@nodeTuple.Item2">
-				@chostname
-				<small>on port @nodeTuple.Item2</small>
+			<a class="list-group-item" asp-controller="Nodes" asp-action="Details" asp-route-guid="@connectedNode.Guid">
+				<span class="badge">@connectedNode.Guid</span>
+				<h4 class="list-group-item-heading">
+					@connectedNode.DnsHostname <small>on port @connectedNode.Port</small>
+				</h4>
+				<p class="list-group-item-text">
+					@subConnectedNodes.Length direct connections.<br />
+					@string.Join(", ", subConnectedNodes.Select(n => $"{n.Hostname}:{n.Port}"))
+				</p>
 			</a>
 		}
 	</div>
