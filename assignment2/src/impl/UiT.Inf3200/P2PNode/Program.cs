@@ -30,13 +30,9 @@ namespace P2PNode
             if (args == null || args.Length < 1 || !int.TryParse(args[0], out portNumber))
                 portNumber = 8899;
 
-            Uri frontEndAddr = null;
-            if (args != null && args.Length > 1 && !string.IsNullOrWhiteSpace(args[1]))
-                frontEndAddr = new Uri(args[1]);
-
             string host = "+";
-            if (args != null && args.Length > 2)
-                host = args[2];
+            if (args != null && args.Length > 1)
+                host = args[1];
 
             nodeGuid = Guid.NewGuid();
 
@@ -47,17 +43,6 @@ namespace P2PNode
 
             http_listener.Start();
             HandleHttpContext(http_listener);
-
-            if (frontEndAddr != null)
-            {
-                var uriBuilder = new UriBuilder(new Uri(frontEndAddr, "/Nodes/Register"));
-
-                var client = new WebClient { BaseAddress = frontEndAddr.ToString() };
-                client.UploadValuesTaskAsync("Nodes/Register", new System.Collections.Specialized.NameValueCollection
-                {
-                    { "guid", nodeGuid.ToString() }
-                });
-            }
 
             terminateSignal.WaitOne();
 
