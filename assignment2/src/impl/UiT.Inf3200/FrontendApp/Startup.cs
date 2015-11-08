@@ -30,8 +30,6 @@ namespace UiT.Inf3200.FrontendApp
 
             try
             {
-                Console.WriteLine("Reading available nodes from file system.");
-
                 var fileLines = File.ReadAllLines(Path.Combine(appEnv.ApplicationBasePath, "availableNodes"));
 
                 foreach (var fileLine in fileLines)
@@ -47,7 +45,6 @@ namespace UiT.Inf3200.FrontendApp
                         port = int.Parse(fileLine.Substring(colIdx + 1).Trim());
                     }
 
-                    Console.WriteLine($"Adding available node {hostname} on port {port} to bag of available nodes.");
                     Controllers.NodesController.Nodes.Add(Tuple.Create(hostname, port));
                 }
             }
@@ -57,7 +54,6 @@ namespace UiT.Inf3200.FrontendApp
             }
 
             var nodesArray = Controllers.NodesController.Nodes.ToArray();
-            Console.WriteLine($"Creating random network for {nodesArray.Length} available nodes.");
             var otherNodeBytes = new byte[nodesArray.Length > 0 ? nodesArray.Length - 1 : 0];
             var randomizer = new Random();
             for (int i = 0; i < nodesArray.Length; i++)
@@ -76,8 +72,6 @@ namespace UiT.Inf3200.FrontendApp
                     j++;
                 }
 
-                Console.WriteLine($"Configuring node {nodesArray[i].Item1}:{nodesArray[i].Item2} to connect to the following nodes:");
-                Console.WriteLine("\t", string.Join(Environment.NewLine + "\t", otherConnectedNodes.Select(nt => $"{nt.Item1}:{nt.Item2}")));
                 string connectionList = string.Join(Environment.NewLine, otherConnectedNodes.Select(nt => $"{nt.Item1}:{nt.Item2}"));
 
                 var nodeUriBuilder = new UriBuilder(Uri.UriSchemeHttp, nodesArray[i].Item1, nodesArray[i].Item2, "/connectToNodes");
