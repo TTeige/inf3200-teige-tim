@@ -30,7 +30,9 @@ namespace UiT.Inf3200.FrontendApp
 
             try
             {
-                var fileLines = File.ReadAllLines("availableNodes");
+                Console.WriteLine("Reading available nodes from file system.");
+
+                var fileLines = File.ReadAllLines(Path.Combine(appEnv.ApplicationBasePath, "availableNodes"));
 
                 foreach (var fileLine in fileLines)
                 {
@@ -45,13 +47,18 @@ namespace UiT.Inf3200.FrontendApp
                         port = int.Parse(fileLine.Substring(colIdx + 1).Trim());
                     }
 
+                    Console.WriteLine($"Adding available node {hostname} on port {port} to bag of available nodes.");
                     Controllers.NodesController.Nodes.Add(Tuple.Create(hostname, port));
                 }
             }
-            catch (FileNotFoundException) { }
+            catch (FileNotFoundException)
+            {
+                Console.WriteLine("File with available node not found. Proceeding with empty nodes list.");
+            }
 
             var nodesArray = Controllers.NodesController.Nodes.ToArray();
-            var otherNodeBytes = new byte[nodesArray.Length - 1];
+            Console.WriteLine($"Creating random network for {nodesArray.Length} available nodes.");
+            var otherNodeBytes = new byte[nodesArray.Length > 0 ? nodesArray.Length - 1 : 0];
             var randomizer = new Random();
             for (int i = 0; i < nodesArray.Length; i++)
             {
@@ -69,6 +76,8 @@ namespace UiT.Inf3200.FrontendApp
                     j++;
                 }
 
+                Console.WriteLine($"Configuring node {nodesArray[i].Item1}:{nodesArray[i].Item2} to connect to the following nodes:");
+                Console.WriteLine(string.Join(Environment.NewLine + "\t", otherConnectedNodes.Select(nt => $"{nt.Item1}:{nt.Item2}")));
                 string connectionList = string.Join(Environment.NewLine, otherConnectedNodes.Select(nt => $"{nt.Item1}:{nt.Item2}"));
 
                 var nodeUriBuilder = new UriBuilder(Uri.UriSchemeHttp, nodesArray[i].Item1, nodesArray[i].Item2, "/connectToNodes");
@@ -78,12 +87,16 @@ namespace UiT.Inf3200.FrontendApp
                 var reqData = Encoding.ASCII.GetBytes(connectionList);
                 req.ContentLength = reqData.LongLength;
 
-                using (var reqStream = req.GetRequestStream())
+                try
                 {
-                    reqStream.Write(reqData, 0, reqData.Length);
-                    reqStream.Flush();
+                    using (var reqStream = req.GetRequestStream())
+                    {
+                        reqStream.Write(reqData, 0, reqData.Length);
+                        reqStream.Flush();
+                    }
+                    using (var resp = req.GetResponse()) { }
                 }
-                using (var resp = req.GetResponse()) { }
+                catch (WebException) { }
             }
         }
 
