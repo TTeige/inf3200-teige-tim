@@ -21,7 +21,7 @@
 		"Microsoft.Framework.Logging.Debug": "1.0.0-beta8"
 	},
 	"commands": {
-		"web": "Microsoft.AspNet.Hosting --server Microsoft.AspNet.Server.WebListener --server.urls http://localhost:5001"
+		"web": "Microsoft.AspNet.Hosting --server Microsoft.AspNet.Server.WebListener --server.urls http://localhost:5001",
 		"weblocal": "Microsoft.AspNet.Hosting --server Microsoft.AspNet.Server.WebListener --server.urls http://localhost:5001",
 		"webany": "Microsoft.AspNet.Hosting --server Microsoft.AspNet.Server.WebListener --server.urls http://*:9999",
 		"webthnetii": "Microsoft.AspNet.Hosting --server Microsoft.AspNet.Server.WebListener --server.urls http://thnetii.td.org.uit.no:5001",
