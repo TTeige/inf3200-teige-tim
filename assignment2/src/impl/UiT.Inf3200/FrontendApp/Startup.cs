@@ -77,7 +77,7 @@ namespace UiT.Inf3200.FrontendApp
                 }
 
                 Console.WriteLine($"Configuring node {nodesArray[i].Item1}:{nodesArray[i].Item2} to connect to the following nodes:");
-                Console.WriteLine(string.Join(Environment.NewLine + "\t", otherConnectedNodes.Select(nt => $"{nt.Item1}:{nt.Item2}")));
+                Console.WriteLine("\t", string.Join(Environment.NewLine + "\t", otherConnectedNodes.Select(nt => $"{nt.Item1}:{nt.Item2}")));
                 string connectionList = string.Join(Environment.NewLine, otherConnectedNodes.Select(nt => $"{nt.Item1}:{nt.Item2}"));
 
                 var nodeUriBuilder = new UriBuilder(Uri.UriSchemeHttp, nodesArray[i].Item1, nodesArray[i].Item2, "/connectToNodes");

@@ -57,7 +57,7 @@ namespace UiT.Inf3200.FrontendApp.Controllers
                                 cHostname = respLine.Substring(0, colIdx);
                                 cPort = int.Parse(respLine.Substring(colIdx + 1));
                             }
-                            nodeConnectionList.Add(Tuple.Create(hostname, port));
+                            nodeConnectionList.Add(Tuple.Create(cHostname, cPort));
                         }
                     }
                 }
