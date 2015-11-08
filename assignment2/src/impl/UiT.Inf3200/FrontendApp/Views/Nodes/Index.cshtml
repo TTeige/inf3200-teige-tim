@@ -1,0 +1,40 @@
+﻿@*
+	For more information on enabling MVC for empty projects, visit http://go.microsoft.com/fwlink/?LinkID=397860
+*@
+
+@using System.Collections.Generic
+@using System.Net;
+@model IReadOnlyList<Tuple<string, int>>
+
+@{
+	ViewData["Title"] = "Available Nodes";
+}
+
+<h2>@ViewData["Title"]</h2>
+
+<div class="btn-group" role="group">
+</div>
+
+<hr />
+
+@if (Model.Any())
+{
+	<div class="list-group">
+		@foreach (var nodeTuple in Model)
+		{
+			var dnsHostEntry = Dns.GetHostEntry(nodeTuple.Item1);
+			var hostname = nodeTuple.Item1;
+			if (dnsHostEntry.Aliases != null && dnsHostEntry.Aliases.Length > 0)
+			{ hostname = dnsHostEntry.Aliases[0]; }
+
+			<a class="list-group-item" asp-controller="Nodes" asp-action="Details" asp-route-hostname="@nodeTuple.Item1" asp-route-port="@nodeTuple.Item2">
+				@hostname
+				<small>on port @nodeTuple.Item2</small>
+			</a>
+		}
+	</div>
+}
+else
+{
+	<p>There are currently no nodes in the network.</p>
+}

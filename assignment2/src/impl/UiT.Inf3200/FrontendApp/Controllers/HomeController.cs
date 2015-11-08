@@ -7,7 +7,7 @@ namespace UiT.Inf3200.FrontendApp.Controllers
     {
         public IActionResult Index()
         {
-            return View();
+            return RedirectToAction("Index", "Nodes");
         }
 
         public IActionResult Error()
