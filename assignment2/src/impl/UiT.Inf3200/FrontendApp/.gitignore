@@ -207,3 +207,5 @@ FakesAssemblies/
 
 # ASP.NET 5
 wwwroot/
+
+availableNodes

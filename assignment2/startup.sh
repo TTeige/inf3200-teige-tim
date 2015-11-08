@@ -1,7 +1,7 @@
 #!/bin/bash
 
 directory=`pwd` # current working directory
-availableNodesFile="src/impl/UiT.Inf3200/FrontendApp/wwwroot/availableNodes"
+availableNodesFile="src/impl/UiT.Inf3200/FrontendApp/availableNodes"
 p2pNodeExe="src/impl/UiT.Inf3200/P2PNode/bin/Debug/P2PNode.exe"
 
 rm -fv $availableNodesFile
