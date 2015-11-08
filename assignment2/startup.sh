@@ -10,7 +10,7 @@ touch $availableNodesFile
 for nd in `cat hostfile`
 do
 	echo Starting node on $nd
-	nohup ssh $nd "cd \"$directory\" ; nohup mono $p2pNodeExe > $nd.p2p.out 2>&1 & " > /dev/null 2>&1 &
+	nohup ssh $nd "cd \"$directory\" ; mono $p2pNodeExe" > /dev/null 2>&1 &
 	echo $nd:8899 >> $availableNodesFile
 done
 
