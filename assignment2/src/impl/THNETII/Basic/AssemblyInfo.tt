@@ -1,0 +1,164 @@
+﻿<#@ template  debug="true" hostSpecific="false" language="C#" #>
+<#@ output extension=".cs" encoding="utf-8" #>
+<#@ Assembly Name="System.Core" #>
+<#@ Assembly Name="System.Windows.Forms" #>
+<#@ import namespace="System" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Reflection" #>
+<#
+	string classname = "AssemblyInfo";
+
+	var assem_attrs_query = (from assem_obj in AppDomain.CurrentDomain.GetAssemblies()
+		from assem_type in assem_obj.GetTypes()
+		where assem_type.Namespace == "System.Reflection" &&
+			assem_type.IsSubclassOf(typeof(System.Attribute)) &&
+			assem_type.Name.StartsWith("Assembly") && assem_type.Name.EndsWith("Attribute")
+		select assem_type).ToList();
+	var assem_attrs = assem_attrs_query.Where(t => !(IsAttributeUsageMultipleAllowed(t)));
+	var assem_multiple_attrs = assem_attrs_query.Where(t => IsAttributeUsageMultipleAllowed(t));
+#>
+using System;
+using System.Reflection;
+
+namespace THNETII
+{
+	public partial class <#= classname #>
+	{
+		private System.Reflection.Assembly assem_obj;
+
+<#
+	foreach (var assem_type in assem_attrs)
+    {
+		int assem_name_start = "Assembly".Length;
+		int assem_name_end = assem_type.Name.LastIndexOf("Attribute");
+		string assem_name = assem_type.Name.Substring(assem_name_start, assem_name_end - assem_name_start);
+		string assem_var_name = assem_name.ToLowerInvariant();
+#>
+		private <#= assem_type.Namespace #>.<#= assem_type.Name #> assem_<#= assem_var_name #>;
+		private bool load_<#= assem_var_name #> = false;
+
+		public virtual <#= assem_type.Namespace #>.<#= assem_type.Name #> <#= assem_name + "Attribute" #>
+		{ get { return this.GetPropertyValue(ref this.load_<#= assem_var_name #>, ref this.assem_<#= assem_var_name #>, () => this.GetCustomAssemblyAttribute<<#= assem_type.Namespace #>.<#= assem_type.Name #>>()); } }
+
+<#
+		var assem_props = assem_type.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+        foreach (var assem_type_propinfo in assem_props.Where(pi => { var x = pi.GetCustomAttributes(typeof(ObsoleteAttribute), false); return (x == null || x.Length == 0); }))
+        {
+			string assem_prop_name;
+			if (string.Equals(assem_name, assem_type_propinfo.Name, StringComparison.InvariantCultureIgnoreCase))
+            {
+				assem_prop_name = assem_name;
+				if (assem_type_propinfo.PropertyType == typeof(string))
+				{
+					assem_prop_name += "String";
+				}
+				else
+				{
+					assem_prop_name += "Value";
+				}
+            }
+            else
+            {
+				assem_prop_name = assem_name + assem_type_propinfo.Name;
+			}
+
+#>
+		public virtual <#= assem_type_propinfo.PropertyType.FullName #> <#= assem_prop_name #>
+		{ 
+			get
+			{
+				var assem_attr = this.<#= assem_name + "Attribute" #>;
+<#
+			if (assem_type_propinfo.PropertyType == typeof(string))
+            {
+#>
+				if (assem_attr == null || string.IsNullOrWhiteSpace(assem_attr.<#= assem_type_propinfo.Name #>))
+					return string.Empty;
+<#
+            }
+			else
+            {
+#>
+				if (assem_attr == null)
+					return default(<#= assem_type_propinfo.PropertyType.FullName #>);
+<#
+            }
+#>
+				else
+					return assem_attr.<#= assem_type_propinfo.Name #>;
+			}
+		}
+
+<#
+        }
+    }
+
+	foreach (var assem_type in assem_multiple_attrs)
+    {
+		int assem_name_start = "Assembly".Length;
+		int assem_name_end = assem_type.Name.LastIndexOf("Attribute");
+		string assem_name = assem_type.Name.Substring(assem_name_start, assem_name_end - assem_name_start);
+		string assem_var_name = assem_name.ToLowerInvariant();
+#>
+		private <#= assem_type.Namespace #>.<#= assem_type.Name #>[] assem_<#= assem_var_name #>;
+		private bool load_<#= assem_var_name #> = false;
+
+		public virtual <#= assem_type.Namespace #>.<#= assem_type.Name #>[] <#= assem_name + "Attributes" #>
+		{ get { return this.GetPropertyValue(ref this.load_<#= assem_var_name #>, ref this.assem_<#= assem_var_name #>, () => this.GetAllCustomAssemblyAttributes<<#= assem_type.Namespace #>.<#= assem_type.Name #>>()); } }
+
+<#
+    }
+#>
+		protected virtual T GetCustomAssemblyAttribute<T>(bool inherit = true) where T : Attribute
+		{
+			var assem_attr_match = this.assem_obj.GetCustomAttributes(typeof(T), inherit);
+			if (assem_attr_match != null && assem_attr_match.Length > 0)
+				return (T)(assem_attr_match[0]);
+			else
+				return default(T);
+		}
+
+		protected virtual T[] GetAllCustomAssemblyAttributes<T>(bool inherit = true) where T : Attribute
+		{
+			var assem_attr_match = this.assem_obj.GetCustomAttributes(typeof(T), inherit);
+			if (assem_attr_match != null && assem_attr_match.Length > 0)
+				return (T[])(assem_attr_match);
+			else
+				return new T[0];
+		}
+
+		protected virtual T GetPropertyValue<T>(ref bool load_field, ref T assem_field, Func<T> assem_delegate)
+		{
+			if (!load_field)
+			{
+				assem_field = assem_delegate != null ? assem_delegate() : default(T);
+				load_field = true;
+			}
+			return assem_field;
+		}
+
+		public <#= classname #>() : this(System.Reflection.Assembly.GetEntryAssembly()) { }
+
+		public <#= classname #>(Type t) : this(System.Reflection.Assembly.GetAssembly(t)) { }
+
+		public <#= classname #>(System.Reflection.Assembly assembly)
+		{
+			if (assembly == null)
+				throw new ArgumentNullException("assembly");
+
+			this.assem_obj = assembly;
+		}
+	}
+}
+<#+
+public static bool IsAttributeUsageMultipleAllowed(Type t)
+{
+	var attr_match = t.GetCustomAttributes(typeof(AttributeUsageAttribute), false);
+	if (attr_match != null)
+    {
+		return attr_match.Cast<AttributeUsageAttribute>().Any(u => u.AllowMultiple);
+    }
+	else
+		return false;
+}
+#>
