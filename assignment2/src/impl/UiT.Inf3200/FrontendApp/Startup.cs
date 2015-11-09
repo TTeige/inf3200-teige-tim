@@ -11,6 +11,8 @@ using System.Linq;
 using System.Net;
 using System.Net.Mime;
 using System.Text;
+using System.Threading.Tasks;
+using UiT.Inf3200.FrontendApp.Controllers;
 using UiT.Inf3200.FrontendApp.Models;
 
 namespace UiT.Inf3200.FrontendApp
@@ -70,45 +72,9 @@ namespace UiT.Inf3200.FrontendApp
                 Console.WriteLine("File with available node not found. Proceeding with empty nodes list.");
             }
 
-            var nodesArray = Controllers.NodesController.Nodes.ToArray().Select(kvp => new NodeModel { Guid = kvp.Key, Hostname = kvp.Value.Item1, Port = kvp.Value.Item2 }).ToArray();
-            var otherNodeBytes = new byte[nodesArray.Length > 0 ? nodesArray.Length - 1 : 0];
-            var randomizer = new Random();
-            for (int i = 0; i < nodesArray.Length; i++)
-            {
-                randomizer.NextBytes(otherNodeBytes);
-                var otherConnectedNodes = new List<NodeModel>(otherNodeBytes.Length);
-                int j = 0;
-                foreach (var otherNodeByte in otherNodeBytes)
-                {
-                    if (j == i)
-                        j++;
+            var models = NodesController.Nodes.ToArray().Select(kvp => new NodeModel { Guid = kvp.Key, Hostname = kvp.Value.Item1, Port = kvp.Value.Item2 }).ToArray();
 
-                    if (otherNodeByte > (128 + 64))
-                        otherConnectedNodes.Add(nodesArray[j]);
-
-                    j++;
-                }
-
-                string connectionList = string.Join(Environment.NewLine, otherConnectedNodes.Select(nt => $"{nt.Hostname}:{nt.Port}"));
-
-                var nodeUriBuilder = new UriBuilder(Uri.UriSchemeHttp, nodesArray[i].Hostname, nodesArray[i].Port, "/connectToNodes");
-                var req = WebRequest.Create(nodeUriBuilder.Uri) as HttpWebRequest;
-                req.Method = WebRequestMethods.Http.Post;
-                req.ContentType = new ContentType(MediaTypeNames.Text.Plain) { CharSet = Encoding.ASCII.WebName }.ToString();
-                var reqData = Encoding.ASCII.GetBytes(connectionList);
-                req.ContentLength = reqData.LongLength;
-
-                try
-                {
-                    using (var reqStream = req.GetRequestStream())
-                    {
-                        reqStream.Write(reqData, 0, reqData.Length);
-                        reqStream.Flush();
-                    }
-                    using (var resp = req.GetResponse()) { }
-                }
-                catch (WebException) { }
-            }
+            Task.WaitAll(models.Select(m => NodesController.SendConnectToModel(m, NodesController.GenerateRandomConnectedNodes(m))).ToArray());
         }
 
         public IHostingEnvironment HostingEnvironment { get; }

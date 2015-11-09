@@ -13,6 +13,11 @@
 
 <h2>@ViewData["Title"]</h2>
 
+<div class="btn-group">
+	<a class="btn btn-danger" asp-controller="Nodes" asp-action="DisconnectAll">Disconnect all</a>
+	<a class="btn btn-success" asp-controller="Nodes" asp-action="ReconnectAll">Reconstruct network</a>
+</div>
+
 <hr />
 
 @if (Model.Any())

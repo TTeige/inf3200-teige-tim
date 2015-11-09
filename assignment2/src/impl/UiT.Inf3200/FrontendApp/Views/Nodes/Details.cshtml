@@ -18,6 +18,11 @@
 	Details for node @Model.DnsHostname <small>on port @Model.Port</small>
 </h2>
 
+<div class="btn-group">
+	<a class="btn btn-default" asp-controller="Nodes" asp-action="Disconnect" asp-route-guid="@Model.Guid">Remove from network</a>
+	<a class="btn btn-default" asp-controller="Nodes" asp-action="Reconnect" asp-route-guid="@Model.Guid">Reconnect to network</a>
+</div>
+
 <hr />
 
 <dl class="dl-horizontal">
