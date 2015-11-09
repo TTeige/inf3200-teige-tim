@@ -40,6 +40,7 @@
 
 @if (connectedNodes.Any())
 {
+	<h3>There are @connectedNodes.Length nodes connected to this node.</h3>
 	<div class="list-group">
 		@foreach (var connectedNode in connectedNodes)
 		{
@@ -54,7 +55,7 @@
 				</h4>
 				<p class="list-group-item-text">
 					@subConnectedNodes.Length direct connections.<br />
-					@string.Join(", ", subConnectedNodes.Select(n => $"{n.Hostname}:{n.Port}"))
+					@string.Join(", ", subConnectedNodes.Select(n => $"{n.DnsHostname}:{n.Port}"))
 				</p>
 			</a>
 		}

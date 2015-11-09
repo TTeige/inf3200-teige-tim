@@ -17,6 +17,7 @@
 
 @if (Model.Any())
 {
+	<h3>There are @Model.Count available nodes in the network.</h3>
 	<div class="list-group">
 		@foreach (var node in Model)
 		{
@@ -31,7 +32,7 @@
 				</h4>
 				<p class="list-group-item-text">
 					@connectedNodes.Length direct connections.<br />
-					@string.Join(", ", connectedNodes.Select(n => $"{n.Hostname}:{n.Port}"))
+					@string.Join(", ", connectedNodes.Select(n => $"{n.DnsHostname}:{n.Port}"))
 				</p>
 			</a>
 		}
